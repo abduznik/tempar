@@ -1,10 +1,6 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-// Workaround: newer PSPSDK pspmodulemgr_kernel.h needs SceLoadCoreExecFileInfo
-// which is defined in psploadcore.h but that header isn't always included first
-typedef struct {} SceLoadCoreExecFileInfo;
-
 #include "cheat.h"
 #include "config.h"
 #include "ctrl.h"
