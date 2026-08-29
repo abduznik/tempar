@@ -4,14 +4,14 @@
 /*
  * Compatibility shim for newer PSPSDK versions.
  *
- * pspmodulemgr_kernel.h references SceLoadCoreExecFileInfo
- * which is defined in psploadcore.h, but not all translation
- * units include psploadcore.h before pspkernel.h.
+ * pspmodulemgr_kernel.h (pulled in by pspkernel.h) references
+ * SceLoadCoreExecFileInfo on line 51, but the Docker image's SDK
+ * does not define it in any header that's included before use.
  *
- * This header provides the forward declaration early.
- * Include BEFORE any PSPSDK kernel headers.
+ * This provides the typedef so compilation succeeds.
+ * Include this header BEFORE any PSPSDK kernel headers.
  */
 
-#include <psploadcore.h>
+typedef struct { int _dummy; } SceLoadCoreExecFileInfo;
 
 #endif
