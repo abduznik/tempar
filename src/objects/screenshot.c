@@ -4,10 +4,7 @@
 #include <pspkernel.h>
 #include <pspdisplay.h>
 
-// Workaround: newer PSPSDK's pspdisplay_kernel.h includes pspmodulemgr_kernel.h
-// which references SceLoadCoreExecFileInfo (removed from public API)
-typedef struct { int dummy; } SceLoadCoreExecFileInfo;
-
+#include <psploadcore.h>
 #include <pspdisplay_kernel.h>
 #include "common.h"
 
