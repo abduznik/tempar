@@ -1,3 +1,4 @@
+#include "psp_compat.h"
 #include <stdio.h>
 #include <string.h>
 #include <pspkernel.h>

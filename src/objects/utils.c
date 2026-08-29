@@ -1,6 +1,5 @@
+#include "psp_compat.h"
 #include <pspsdk.h>
-// Workaround: newer PSPSDK needs SceLoadCoreExecFileInfo
-typedef struct {} SceLoadCoreExecFileInfo;
 #include <pspreg.h>
 #include <pspctrl_kernel.h>
 #include <pspdisplay.h>

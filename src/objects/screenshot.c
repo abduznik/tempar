@@ -1,12 +1,9 @@
 #ifdef _SCREENSHOT_
 
+#include "psp_compat.h"
 #include <stdio.h>
-// Workaround: newer PSPSDK needs SceLoadCoreExecFileInfo before pspkernel.h
-typedef struct {} SceLoadCoreExecFileInfo;
 #include <pspkernel.h>
 #include <pspdisplay.h>
-
-#include <psploadcore.h>
 #include <pspdisplay_kernel.h>
 #include "common.h"
 

@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "psp_compat.h"
 #include <pspkernel.h>
 #include <pspctrl.h>
 #include "common.h"
