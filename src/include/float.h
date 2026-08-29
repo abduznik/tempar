@@ -1,6 +1,8 @@
 #ifndef FLOAT_H
 #define FLOAT_H
 
+#include <pspkerneltypes.h>
+
 #define MODE_GENERIC 0
 #define MODE_EXP 1
 #define MODE_FLOAT_ONLY 2
