@@ -249,7 +249,7 @@ void layout_cheatmenu(Cheat *cheat) {
 	while(ret == 0) {
 		pspDebugScreenSetXY(0, 3);
 
-		for(i = 0; i < 5; i++) {
+		for(i = 0; i < 6; i++) {
 			pspDebugScreenSetBackColor(colors.bgcolor + (i * 0x06)); // fade the background
 			pspDebugScreenSetTextColor(i == sel ? colors.color01 : colors.color02); // highlight selected line
 
@@ -271,6 +271,17 @@ void layout_cheatmenu(Cheat *cheat) {
 				case 4:
 					puts(lang.cheat_menu.delete_cheat);
 					break;
+				case 5:
+					if(cheat != NULL && !cheat_is_folder(cheat)) {
+						if(cheat->flags & CHEAT_FAVORITE) {
+							puts("Remove Favorite");
+						} else {
+							puts("Add Favorite");
+						}
+					} else {
+						puts("--");
+					}
+					break;
 			}
 
 			line_clear(-1);
@@ -281,10 +292,10 @@ void layout_cheatmenu(Cheat *cheat) {
 
 		switch(ctrl = ctrl_waitmask(0, 0, PSP_CTRL_UP | PSP_CTRL_DOWN | PSP_CTRL_CROSS | PSP_CTRL_CIRCLE)) {
 			case PSP_CTRL_UP:
-				sel = (sel > 0 ? sel - 1 : 4);
+				sel = (sel > 0 ? sel - 1 : 5);
 				break;
 			case PSP_CTRL_DOWN:
-				sel = (sel < 4 ? sel + 1 : 0);
+				sel = (sel < 5 ? sel + 1 : 0);
 				break;
 			case PSP_CTRL_CROSS:
 				switch(sel) {
@@ -320,6 +331,11 @@ void layout_cheatmenu(Cheat *cheat) {
 								menu.cheater.selected = cheat_previous_visible(cheat);
 							}
 							cheat_delete(cheat);
+						}
+						break;
+					case 5:
+						if(cheat != NULL && !cheat_is_folder(cheat)) {
+							cheat_toggle_favorite(cheat);
 						}
 						break;
 				}
@@ -2153,6 +2169,8 @@ u32 layout_cheats()  {
 	u32 ctrl = 0, ret = 0;
 	int repeat_time = 0, repeat_interval = 0;
 	int i, j, k;
+	int sel_display = 0;
+	int total_visible = 0;
 
 	int battery_temp = scePowerGetBatteryTemp();
 	int battery_life_percent = scePowerGetBatteryLifePercent();
@@ -2163,31 +2181,31 @@ u32 layout_cheats()  {
 	}
 
 	while(ret == 0) {
-		i = j = k = 0;
+		total_visible = cheat_visible_count();
 
-		if(cheat_total > 0) {
-			// get the code to finish printing at
-			for(i = cheat_get_index(menu.cheater.selected); i < cheat_total; i++) {
-				if(cheat_is_visible(cheat_get(i))) {
-					if(j++ >= 12) {
-						break;
-					}
-				}
+		// find display index of selected cheat
+		sel_display = 0;
+		for(i = 0; i < total_visible; i++) {
+			if(cheat_get_by_display_index(i) == menu.cheater.selected) {
+				sel_display = i;
+				break;
 			}
+		}
 
-			// get code to start printing at
-			for(i = cheat_get_index(menu.cheater.selected); i > 0; i--) {
-				if(cheat_is_visible(cheat_get(i))) {
-					if(k++ >= 25 - j) {
-						break;
-					}
-				}
-			}
+		if(total_visible > 0) {
+			// calculate display range: show 12 after cursor, fill rest before
+			int display_start, display_end;
+			display_end = sel_display + 12;
+			if(display_end >= total_visible) display_end = total_visible - 1;
+			display_start = display_end - 24;
+			if(display_start < 0) display_start = 0;
 
 			pspDebugScreenSetXY(0, 3);
 
-			for(k = 0; k < 25; k++) {
-				Cheat *cheat = cheat_get(i);
+			for(k = display_start; k <= display_end; k++) {
+				Cheat *cheat = cheat_get_by_display_index(k);
+
+				if(cheat == NULL) break;
 
 				if(cheat == menu.cheater.selected) {
 					pspDebugScreenSetTextColor(colors.color01);
@@ -2196,7 +2214,7 @@ u32 layout_cheats()  {
 					puts("   ");
 				}
 
-				// force hightlight cheat if it is folder or comment
+				// force highlight cheat if it is folder or comment
 				if(cheat->length == 0) {
 					pspDebugScreenSetTextColor(colors.color10);
 				} else if(cheat_is_folder(cheat)) {
@@ -2228,6 +2246,13 @@ u32 layout_cheats()  {
 							break;
 					}
 
+					// favorite indicator
+					if(cheat->flags & CHEAT_FAVORITE) {
+						pspDebugScreenSetTextColor(colors.color06);
+						puts("*");
+						pspDebugScreenSetTextColor(colors.color02);
+					}
+
 					// if selected highlight else don't
 					if(cheat != menu.cheater.selected) {
 						pspDebugScreenSetTextColor(colors.color02);
@@ -2241,14 +2266,6 @@ u32 layout_cheats()  {
 				}
 
 				line_clear(-1);
-
-				if(cheat->flags & CHEAT_HIDDEN) {
-					i += cheat_folder_size(cheat);
-				}
-
-				if(++i >= cheat_total) {
-					break;
-				}
 			}
 		} else {
 			pspDebugScreenSetXY(0, 3);
@@ -2315,28 +2332,36 @@ u32 layout_cheats()  {
 		repeat_time = CTRL_REPEAT_TIME;
 		repeat_interval = CTRL_REPEAT_INTERVAL;
 
-		// dpad/analog
+		// dpad/analog — navigate in display order
 		switch(ctrl & (PSP_CTRL_UP | PSP_CTRL_DOWN | PSP_CTRL_LEFT | PSP_CTRL_RIGHT |
 			PSP_CTRL_ANALOG_UP | PSP_CTRL_ANALOG_DOWN | PSP_CTRL_ANALOG_LEFT | PSP_CTRL_ANALOG_RIGHT)) {
 			case PSP_CTRL_UP:
-				menu.cheater.selected = cheat_previous_visible(menu.cheater.selected);
+				if(sel_display > 0) {
+					menu.cheater.selected = cheat_get_by_display_index(sel_display - 1);
+				}
 				break;
 			case PSP_CTRL_DOWN:
-				menu.cheater.selected = cheat_next_visible(menu.cheater.selected);
+				if(sel_display < total_visible - 1) {
+					menu.cheater.selected = cheat_get_by_display_index(sel_display + 1);
+				}
 				break;
 			case PSP_CTRL_LEFT:
 			case PSP_CTRL_ANALOG_UP:
 			case PSP_CTRL_ANALOG_LEFT:
 				repeat_time = CTRL_REPEAT_TIME_QUICK;
 				repeat_interval = CTRL_REPEAT_INTERVAL_QUICK;
-				menu.cheater.selected = cheat_previous_visible(menu.cheater.selected);
+				if(sel_display > 0) {
+					menu.cheater.selected = cheat_get_by_display_index(sel_display - 1);
+				}
 				break;
 			case PSP_CTRL_RIGHT:
 			case PSP_CTRL_ANALOG_DOWN:
 			case PSP_CTRL_ANALOG_RIGHT:
 				repeat_time = CTRL_REPEAT_TIME_QUICK;
 				repeat_interval = CTRL_REPEAT_INTERVAL_QUICK;
-				menu.cheater.selected = cheat_next_visible(menu.cheater.selected);
+				if(sel_display < total_visible - 1) {
+					menu.cheater.selected = cheat_get_by_display_index(sel_display + 1);
+				}
 				break;
 		}
 

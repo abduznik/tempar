@@ -1,0 +1,42 @@
+name: Build & Release PRX
+
+on:
+  push:
+    branches: [main, master, feat/*]
+    tags: ['v*']
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build PRX via Docker
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/src" -w "/src" pspdev/pspsdk make release
+
+      - name: Find PRX files
+        id: find-prx
+        run: |
+          mkdir -p artifacts
+          find build -name "*.prx" -exec cp {} artifacts/ \;
+          find build -name "*.tar.gz" -exec cp {} artifacts/ \;
+          ls -la artifacts/
+          echo "prx_count=$(ls artifacts/*.prx 2>/dev/null | wc -l)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tempar-build
+          path: artifacts/
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

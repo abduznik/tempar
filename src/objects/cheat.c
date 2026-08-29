@@ -1081,8 +1081,9 @@ void cheat_load_db(const char *file, const char *game_id, char index) {
 	#define CODE_LINE_L 0x20
 	#define CODE_LINE_M 0x40
 	#define CODE_LINE_N 0x80
+	#define CODE_LINE_F 0x100
 
-	// load the cheats
+// load the cheats
 	SceUID fd = fileIoOpen(file, PSP_O_RDONLY, 0777);
 
 	if(fd > -1) {
@@ -1094,6 +1095,10 @@ void cheat_load_db(const char *file, const char *game_id, char index) {
 		u32 game_parse = 0;
 		u32 i = 0;
 
+		// deferred favorite indices (collected during parse, applied after)
+		int fav_indices[256];
+		int fav_count = 0;
+
 		while(fileIoSkipBlank(fd) != 0) {
 			line_type = 0;
 
@@ -1102,6 +1107,8 @@ void cheat_load_db(const char *file, const char *game_id, char index) {
 			} else if(game_parse) {
 				if(_strnicmp(fileIoGet(), "_G ", 3) == 0) {
 					line_type = CODE_LINE_G;
+				} else if(_strnicmp(fileIoGet(), "_F ", 3) == 0) {
+					line_type = CODE_LINE_F;
 				} else if(_strnicmp(fileIoGet(), "_C0 ", 4) == 0 || _strnicmp(fileIoGet(), "_C ", 3) == 0) {
 					line_type = CODE_LINE_C0;
 				} else if(_strnicmp(fileIoGet(), "_C1 ", 4) == 0) {
@@ -1138,6 +1145,11 @@ void cheat_load_db(const char *file, const char *game_id, char index) {
 							game_name[i] = 0;
 							break;
 						}
+					}
+				} else if(line_type & CODE_LINE_F) {
+					// collect favorite index for deferred application
+					if(fav_count < 256) {
+						fav_indices[fav_count++] = atoi(fileIoGet());
 					}
 				} else if(line_type & (CODE_LINE_C0 | CODE_LINE_C1 | CODE_LINE_C2)) {
 					cheat = cheat_add(NULL);
@@ -1184,6 +1196,16 @@ void cheat_load_db(const char *file, const char *game_id, char index) {
 		}
 
 		fileIoClose(fd);
+
+		// apply deferred favorites
+		for(i = 0; i < fav_count; i++) {
+			if(fav_indices[i] >= 0 && fav_indices[i] < cheat_total) {
+				Cheat *fav_cheat = cheat_get(fav_indices[i]);
+				if(fav_cheat != NULL) {
+					fav_cheat->flags |= CHEAT_FAVORITE;
+				}
+			}
+		}
 	}
 }
 
@@ -1406,6 +1428,15 @@ void cheat_save(const char *game_id) {
 			if(strlen(game_name) > 0) { // write game name
 				sprintf(buffer, "_G %s\n", game_name);
 				fileIoWrite(fd, buffer, strlen(buffer));
+			}
+
+			// write favorite indices
+			for(i = 0; i < cheat_total; i++) {
+				cheat = cheat_get(i);
+				if(cheat != NULL && (cheat->flags & CHEAT_FAVORITE)) {
+					sprintf(buffer, "_F %d\n", i);
+					fileIoWrite(fd, buffer, strlen(buffer));
+				}
 			}
 
 			for(i = 0; i < cheat_total; i++) {
@@ -2065,6 +2096,52 @@ void cheat_set_status(Cheat *cheat, u32 flags) {
 
 	// reapply cheats
 	cheat_apply(0);
+}
+
+void cheat_toggle_favorite(Cheat *cheat) {
+	if(cheat != NULL && !cheat_is_folder(cheat)) {
+		cheat->flags ^= CHEAT_FAVORITE;
+	}
+}
+
+int cheat_visible_count(void) {
+	int count = 0;
+	int i;
+	for(i = 0; i < cheat_total; i++) {
+		Cheat *c = cheat_get(i);
+		if(c != NULL && cheat_is_visible(c)) {
+			count++;
+		}
+	}
+	return count;
+}
+
+Cheat *cheat_get_by_display_index(int display_index) {
+	int fav_idx = 0;
+	int nonfav_idx = 0;
+	int i;
+
+	// First pass: return favorites in order
+	for(i = 0; i < cheat_total; i++) {
+		Cheat *c = cheat_get(i);
+		if(c == NULL || !cheat_is_visible(c)) continue;
+		if(c->flags & CHEAT_FAVORITE) {
+			if(fav_idx == display_index) return c;
+			fav_idx++;
+		}
+	}
+
+	// Second pass: return non-favorites in order
+	for(i = 0; i < cheat_total; i++) {
+		Cheat *c = cheat_get(i);
+		if(c == NULL || !cheat_is_visible(c)) continue;
+		if(!(c->flags & CHEAT_FAVORITE)) {
+			if(nonfav_idx == display_index - fav_idx) return c;
+			nonfav_idx++;
+		}
+	}
+
+	return NULL;
 }
 
 int cheat_get_engine(Cheat *cheat) {

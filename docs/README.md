@@ -26,14 +26,28 @@ replay code types. And from that came "TempAR", the angry cheat device. :)
 | NOTE           | Toggle cheat engine between enabled and disabled. |
 | SELECT+VOLDOWN | Screenshot.                                       |
 
-### General
+### Cheater (Cheat list)
 
-| Button         | Effect                       |
-|----------------|------------------------------|
-| CROSS          | Execute selected function.   |
-| CIRCLE         | Back/exit cheat engine menu. |
-| LTRIGGER       | Previous tab.                |
-| RTRIGGER       | Next tab.                    |
+| Button         | Effect                                         |
+|----------------|------------------------------------------------|
+| DPAD           | Navigate cheat list.                           |
+| CROSS          | Toggle selected cheat on/off.                  |
+| SQUARE         | Toggle selected cheat always-on.               |
+| TRIANGLE       | Open cheat menu (edit, rename, copy, delete, favorite). |
+| START          | Collapse all folders.                          |
+| LTRIGGER       | Toggle all cheats on/off.                      |
+| VOLDOWN        | Toggle game name display.                      |
+
+#### Cheat menu (TRIANGLE)
+
+| Option          | Effect                                    |
+|-----------------|-------------------------------------------|
+| Edit Cheat      | Open hex/code editor for the cheat.       |
+| Rename Cheat    | Open keyboard to rename.                  |
+| Copy Cheat      | Duplicate the cheat.                      |
+| Insert Cheat    | Insert a new empty cheat after selected.  |
+| Delete Cheat    | Delete the selected cheat.                |
+| Add/Remove Favorite | Mark cheat as favorite (appears at top of list). |
 
 ### Memory browser
 

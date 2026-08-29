@@ -26,7 +26,9 @@ enum CheatFlags {
 	/* *Cheat uses PSPAR code types.*/
 	CHEAT_PSPAR = 0x20,
 	/* *Cheat uses PSPAR extended (NitroHax) code types.*/
-	CHEAT_PSPAR_EXT = 0x40
+	CHEAT_PSPAR_EXT = 0x40,
+	/* *Cheat is marked as a favorite (displayed at top of list).*/
+	CHEAT_FAVORITE = 0x80
 };
 
 /**
@@ -366,6 +368,26 @@ void cheat_folder_toggle(Cheat *folder);
 
 // TODO
 void cheat_set_status(Cheat *cheat, u32 flags);
+
+/** Toggles the favorite flag on a cheat.
+ *
+ * @param cheat Pointer to a cheat.
+ */
+void cheat_toggle_favorite(Cheat *cheat);
+
+/** Gets the display-order cheat at a given visible index.
+ * Favorites appear first, then non-favorites in original order.
+ *
+ * @param display_index The display-order index (0-based).
+ * @return Pointer to the cheat at that display position, or NULL.
+ */
+Cheat *cheat_get_by_display_index(int display_index);
+
+/** Gets the number of visible cheats in display order.
+ *
+ * @return Total number of visible cheats.
+ */
+int cheat_visible_count(void);
 
 /**
  * Gets the cheat engine used by a cheat.
