@@ -2209,7 +2209,7 @@ Cheat *cheat_insert(Cheat *cheat, int index) {
 		// setup the new cheat
 		Cheat *new_cheat = cheat_get(index);
 		if(cheat != NULL) {
-			new_cheat = &cheat;
+			memcpy(new_cheat, cheat, sizeof(Cheat));
 			new_cheat->length = 0;
 		} else {
 			memset(new_cheat, 0, sizeof(Cheat));
