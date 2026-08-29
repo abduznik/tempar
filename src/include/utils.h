@@ -22,8 +22,6 @@ typedef struct {
 	unsigned int *vars;
 } PspModuleImport;
 
-void *sceKernelGetGameInfo();
-
 u32 *find_export(const char *szMod, const char *szLib, u32 nid);
 
 void *map_function(const char *szMod, const char *szLib, u32 nid, void *default_func);

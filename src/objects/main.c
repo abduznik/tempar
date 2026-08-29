@@ -56,7 +56,7 @@ char boot_path[255];
 char plug_path[255];
 char plug_drive[10];
 
-void button_callback(int curr_but, int last_but, void *arg) {
+void button_callback(u32 curr_but, u32 last_but, void *arg) {
 	if(!menu.visible) {
 		if((curr_but & cfg.menu_key) == cfg.menu_key && cfg.menu_key) {
 			menu.visible = 1;
