@@ -69,7 +69,7 @@ static char get_num(float *val, int *exp) {
 	return ret;
 }
 
-void f_cvt(unsigned int *address, char *buf, int bufsize, int precision, int mode) {
+void f_cvt(u32 *address, char *buf, int bufsize, int precision, int mode) {
 	if((unsigned int)address % 4) {
 		strncpy(buf, "ERR", bufsize);
 		buf[bufsize-1] = 0;

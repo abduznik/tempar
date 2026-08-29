@@ -3096,7 +3096,7 @@ u32 layout_browser() {
 					puts("   ");
 
 					// print out the float
-					f_cvt(menu.bd.decoder[menu.bd.no].address + (i * 4), buffer, sizeof(buffer), 6, MODE_GENERIC);
+					f_cvt((u32 *)(menu.bd.decoder[menu.bd.no].address + (i * 4)), buffer, sizeof(buffer), 6, MODE_GENERIC);
 					puts(buffer);
 				} else {
 					// print out the opcode
