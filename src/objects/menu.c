@@ -1806,7 +1806,7 @@ void layout_thlist() {
 	int th_count = 0;
 	SceKernelThreadInfo th_info;
 
-	sceKernelGetThreadmanIdList(SCE_KERNEL_TMID_Thread, &th_uid, 100, &th_count);
+	sceKernelGetThreadmanIdList(SCE_KERNEL_TMID_Thread, th_uid, 100, &th_count);
 
 	while(ret == 0) {
 		// heading
@@ -2168,7 +2168,7 @@ void layout_heading() {
 u32 layout_cheats()  {
 	u32 ctrl = 0, ret = 0;
 	int repeat_time = 0, repeat_interval = 0;
-	int i, j, k;
+	int i, k;
 	int sel_display = 0;
 	int total_visible = 0;
 
