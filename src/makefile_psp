@@ -23,7 +23,7 @@ OBJS = imports.o \
 	   objects/filebrowser.o
 
 INCDIR = include
-CFLAGS = -Os -G0 -Wall -fshort-wchar -fno-pic -mno-check-zero-division -D_FONT_acorn -D_FONT_acorn -D_CWCHEAT_ -D_PSPAR_ -D_USB_ -D_PSID_ -D_SCREENSHOT_ -D_GUIDE_ -D_UMDDUMP_ -D_MODLIST_ -D_THLIST_ -D_MIPS_ -D_AUTOOFF_ -D_MULTILANGUAGE_
+CFLAGS = -Os -G0 -Wall -fshort-wchar -fno-pic -mno-check-zero-division -Wno-implicit-function-declaration -D_FONT_acorn -D_FONT_acorn -D_CWCHEAT_ -D_PSPAR_ -D_USB_ -D_PSID_ -D_SCREENSHOT_ -D_GUIDE_ -D_UMDDUMP_ -D_MODLIST_ -D_THLIST_ -D_MIPS_ -D_AUTOOFF_ -D_MULTILANGUAGE_
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
 ASFLAGS = $(CFLAGS)
 
