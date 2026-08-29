@@ -12,6 +12,8 @@
 #include <string.h>
 #include <pspopenpsid.h>
 #include <pspctrl_kernel.h>
+// Workaround: newer PSPSDK missing SceLoadCoreExecFileInfo
+typedef struct { int dummy; } SceLoadCoreExecFileInfo;
 #include <pspdisplay_kernel.h>
 #include <pspimpose_driver.h>
 #include <pspkerneltypes.h>
