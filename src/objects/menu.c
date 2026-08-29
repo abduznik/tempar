@@ -1100,7 +1100,7 @@ void layout_search(char show_search_mode) {
 					puts("   ");
 
 					// print out the float
-					f_cvt(search.results[i], buffer, sizeof(buffer), 6, MODE_GENERIC);
+					f_cvt((u32 *)search.results[i], buffer, sizeof(buffer), 6, MODE_GENERIC);
 					puts(buffer);
 				}
 
