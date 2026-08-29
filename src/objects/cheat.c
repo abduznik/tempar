@@ -1149,7 +1149,7 @@ void cheat_load_db(const char *file, const char *game_id, char index) {
 				} else if(line_type & CODE_LINE_F) {
 					// collect favorite index for deferred application
 					if(fav_count < 256) {
-						fav_indices[fav_count++] = atoi(fileIoGet());
+						fav_indices[fav_count++] = (int)strtoul(fileIoGet(), NULL, 10);
 					}
 				} else if(line_type & (CODE_LINE_C0 | CODE_LINE_C1 | CODE_LINE_C2)) {
 					cheat = cheat_add(NULL);
