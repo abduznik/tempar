@@ -1,3 +1,5 @@
+// Workaround: newer PSPSDK needs SceLoadCoreExecFileInfo before pspkernel.h
+typedef struct {} SceLoadCoreExecFileInfo;
 #include <pspmodulemgr.h>
 #include <pspctrl.h>
 #include <pspdisplay.h>
