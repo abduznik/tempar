@@ -336,10 +336,11 @@ void layout_cheatmenu(Cheat *cheat) {
 						}
 						break;
 					case 5:
-						if(cheat != NULL && !cheat_is_folder(cheat)) {
-							cheat_toggle_favorite(cheat);
-						}
-						break;
+								if(cheat != NULL && !cheat_is_folder(cheat)) {
+									cheat_toggle_favorite(cheat);
+									cheat_save(gameid_get(0));
+								}
+								break;
 				}
 
 				ret = ctrl;
