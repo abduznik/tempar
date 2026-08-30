@@ -1,4 +1,4 @@
-export RELVER := 1.65
+export RELVER := 1.70
 
 release: prep psp lite pack clean
 release_pr: prep psppr litepr pack clean
@@ -18,7 +18,7 @@ pack:
 	cp -r src/resources/* build/temp
 	cp -r docs build/temp
 	mv src/*.prx build/temp/seplugins/TempAR
-	cd build/temp && tar cfvz ../tempar-$(RELVER).tar.gz *
+	cd build/temp && zip -r ../tempar-$(RELVER).zip *
 
 psp:
 	make -C src -f makefile_psp
