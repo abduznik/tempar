@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define CONFIG_VER 0x07
+#define CONFIG_VER 0x08
 
 /**
  * Config structure.
@@ -29,6 +29,8 @@ typedef struct Config {
 	u32 address_end;
 	u8 swap_xo;
 	u8 language_file;
+	/** Simple additive checksum over all preceding fields (set on save, verified on load). */
+	u32 checksum;
 }  __attribute__((__packed__)) Config;
 
 /**

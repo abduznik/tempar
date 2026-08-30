@@ -388,7 +388,7 @@ void layout_copymenu(u32 *address, u32 *value, int flags) {
 				case 4:
 					printf("%-33s", lang.copy_menu.copy_to_new_cheat);
 					pspDebugScreenSetTextColor(colors.color02);
-					sprintf(buffer, lang.copy_menu.copier_num, copier->no + 1);
+					snprintf(buffer, sizeof(buffer), lang.copy_menu.copier_num, copier->no + 1);
 					printf("%32s", buffer);
 					break;
 			}
@@ -1994,7 +1994,7 @@ void layout_umddumper() {
 						umd_sector = *(u32*)(buf + 0x50);
 						now_sector = 0;
 				
-						sprintf(buffer, "%s/ISO/%s.iso", plug_drive, gameid_get(0));
+						snprintf(buffer, sizeof(buffer), "%s/ISO/%s.iso", plug_drive, gameid_get(0));
 
 						// make sure output file doesn't exist
 						fd_i = sceIoOpen(buffer, PSP_O_RDONLY, 0777);
@@ -2196,12 +2196,17 @@ u32 layout_cheats()  {
 		}
 
 		if(total_visible > 0) {
-			// calculate display range: show 12 after cursor, fill rest before
+			// calculate display range: 25-item window, 12 items after cursor when possible
 			int display_start, display_end;
 			display_end = sel_display + 12;
 			if(display_end >= total_visible) display_end = total_visible - 1;
 			display_start = display_end - 24;
-			if(display_start < 0) display_start = 0;
+			if(display_start < 0) {
+				// near the top: keep the window full by extending it forward
+				display_start = 0;
+				display_end = display_start + 24;
+				if(display_end >= total_visible) display_end = total_visible - 1;
+			}
 
 			pspDebugScreenSetXY(0, 3);
 
@@ -2822,7 +2827,7 @@ u32 layout_options() {
 						line_clear(33);
 						pspDebugScreenSetTextColor(colors.color01);
 						printf("%s... ", lang.misc.working);
-						sprintf(buffer, "dump%i.ram", menu.options.dump_no);
+						snprintf(buffer, sizeof(buffer), "dump%i.ram", menu.options.dump_no);
 						if(dump_memory(buffer, (void*)0x08800000, (24 * 1024 * 1024))) {
 							menu.options.dump_no++;
 							puts(lang.misc.done);
@@ -2847,7 +2852,7 @@ u32 layout_options() {
 						gameid_get(1);
 						break;
 					case 7:
-						sprintf(buffer, "colors/color%i.txt", cfg.color_file);
+						snprintf(buffer, sizeof(buffer), "colors/color%i.txt", cfg.color_file);
 						color_load(buffer);
 						break;
 					case 9:
@@ -2874,7 +2879,7 @@ u32 layout_options() {
 						pspDebugScreenSetTextColor(colors.color01);
 						printf("%s... ", lang.misc.working);
 
-						sprintf(buffer, "patch/%s.pat", gameid_get(0));
+						snprintf(buffer, sizeof(buffer), "patch/%s.pat", gameid_get(0));
 						patch_apply(buffer);
 
 						puts(lang.misc.done);

@@ -8,6 +8,45 @@
 Config cfg;
 Colors colors;
 
+/* Computes a simple additive checksum over all Config fields except the checksum field itself. */
+static u32 config_checksum(void) {
+	u32 sum = 0;
+	u32 i;
+	const u8 *p = (const u8*)&cfg;
+
+	for(i = 0; i < sizeof(Config) - sizeof(u32); i++) {
+		sum += p[i];
+	}
+
+	return sum;
+}
+
+/* Verifies the config checksum and clamps fields to safe ranges. Returns 0 if the config is invalid. */
+static int config_validate(void) {
+	// verify the checksum
+	if(cfg.checksum != config_checksum()) {
+		return 0;
+	}
+
+	// clamp fields to safe ranges
+	if(cfg.max_cheats == 0 || cfg.max_cheats > 8192) {
+		cfg.max_cheats = (cfg.max_cheats == 0 ? 1024 : 8192);
+	}
+	if(cfg.max_blocks == 0 || cfg.max_blocks > 16384) {
+		cfg.max_blocks = (cfg.max_blocks == 0 ? 2048 : 16384);
+	}
+	if(cfg.max_text_rows == 0 || cfg.max_text_rows > 100000) {
+		cfg.max_text_rows = (cfg.max_text_rows == 0 ? 5000 : 100000);
+	}
+
+	// a valid game memory range is required
+	if(cfg.address_start >= cfg.address_end) {
+		return 0;
+	}
+
+	return 1;
+}
+
 int config_load(const char *file) {
 	config_reset();
 
@@ -20,12 +59,17 @@ int config_load(const char *file) {
 		sceIoRead(fd, &config_ver, sizeof(u8));
 		if(config_ver == CONFIG_VER) {
 			sceIoRead(fd, (void*)&cfg + 1, sizeof(Config) - 1);
+
+			// validate checksum and clamp fields; reset on corruption
+			if(!config_validate()) {
+				config_reset();
+			}
 		}
 		sceIoClose(fd);
 
 		// load the colorss
 		char color_path[64];
-		sprintf(color_path, "colors/color%i.txt", cfg.color_file);
+		snprintf(color_path, sizeof(color_path), "colors/color%i.txt", cfg.color_file);
 		color_load(color_path);
 
 		// update the button callback
@@ -41,6 +85,7 @@ int config_save(const char *file) {
 	SceUID fd = sceIoOpen(file, PSP_O_CREAT | PSP_O_WRONLY, 0777);
 
 	if(fd > -1) {
+		cfg.checksum = config_checksum();
 		sceIoWrite(fd, &cfg, sizeof(cfg));
 		sceIoClose(fd);
 

@@ -17,7 +17,7 @@ void search_init() {
 	// load the previous search
 	while(1) {
 		char buffer[64];
-		sprintf(buffer, "searches/search%i.dat", ++search.number);
+		snprintf(buffer, sizeof(buffer), "searches/search%i.dat", ++search.number);
 		SceUID fd = sceIoOpen(buffer, PSP_O_RDONLY, 0777);
 		if(fd >= 0) {
 			sceIoClose(fd);
@@ -50,7 +50,7 @@ void search_start(char search_mode) {
 	search.history[0].flags = (search.history[0].flags & ~0xF) | search_mode;
 
 	// open the output file
-	sprintf(buffer, "searches/search%i.dat", search.number + 1);
+	snprintf(buffer, sizeof(buffer), "searches/search%i.dat", search.number + 1);
 	sceIoRemove(buffer);
 	fd = fileIoOpen(buffer, PSP_O_WRONLY | PSP_O_TRUNC | PSP_O_CREAT, 0777);
 
@@ -60,7 +60,7 @@ void search_start(char search_mode) {
 			fd2 = fileIoOpen("searches/search.ram", PSP_O_RDONLY, 0777);
 			search_ftype = SEARCH_FILE_DUMP;
 		} else {
-			sprintf(buffer, "searches/search%i.dat", search.number);
+			snprintf(buffer, sizeof(buffer), "searches/search%i.dat", search.number);
 			fd2 = fileIoOpen(buffer, PSP_O_RDONLY, 0777);
 			search_ftype = SEARCH_FILE_DAT;
 		}
@@ -212,7 +212,7 @@ CloseFiles:
 void search_undo() {
 	if(search.number > 1) {
 		char buffer[64];
-		sprintf(buffer, "searches/search%i.dat", search.number--);
+		snprintf(buffer, sizeof(buffer), "searches/search%i.dat", search.number--);
 		sceIoRemove(buffer);
 		search_load_results();
 	} else {
@@ -234,7 +234,7 @@ void search_reset(char remove_files, char reset_history) {
 
 		do {
 			char buffer[64];
-			sprintf(buffer, "searches/search%i.dat", search.number);
+			snprintf(buffer, sizeof(buffer), "searches/search%i.dat", search.number);
 			sceIoRemove(buffer);
 		} while(search.number-- > 0);
 	}
@@ -260,7 +260,7 @@ void search_load_results() {
 
 	if(search.number != 0) {
 		char buffer[64];
-		sprintf(buffer, "searches/search%i.dat", search.number);
+		snprintf(buffer, sizeof(buffer), "searches/search%i.dat", search.number);
 
 		SceUID fd = fileIoOpen(buffer, PSP_O_RDONLY, 0777);
 		if(fd >= 0) {

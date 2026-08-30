@@ -58,12 +58,12 @@ int language_load() {
 	sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &language_system);
 
 	if(cfg.language_file == 0) {
-		sprintf(file, "languages/%s.bin", languages[language_system]);
+		snprintf(file, sizeof(file), "languages/%s.bin", languages[language_system]);
 		ret = language_load_file(file);
 	} else {
 		while(cfg.language_file - 1 < languages_count) {
 			if(cfg.language_file - 1 != language_system) {
-				sprintf(file, "languages/%s.bin", languages[cfg.language_file - 1]);
+				snprintf(file, sizeof(file), "languages/%s.bin", languages[cfg.language_file - 1]);
 				ret = language_load_file(file);
 				if(ret) {
 					break;
@@ -73,7 +73,7 @@ int language_load() {
 		}
 
 		if(!ret) {
-			sprintf(file, "languages/language%i.bin", cfg.language_file - languages_count);
+			snprintf(file, sizeof(file), "languages/language%i.bin", cfg.language_file - languages_count);
 			ret = language_load_file(file);
 		}
 	}

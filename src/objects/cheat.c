@@ -127,6 +127,24 @@ void memory_copy(u32 to, u32 from, u32 bytes) {
 	to = real_address(to);
 	from = real_address(from);
 
+	// validate both addresses fall within game memory before copying
+	if(to < cfg.address_start || to > cfg.address_end ||
+	   from < cfg.address_start || from > cfg.address_end) {
+		return;
+	}
+
+	// clamp the copy length so reads and writes stay within game memory
+	if(bytes > cfg.address_end - to) {
+		bytes = cfg.address_end - to;
+	}
+	if(bytes > cfg.address_end - from) {
+		bytes = cfg.address_end - from;
+	}
+
+	if(bytes == 0) {
+		return;
+	}
+
 	memcpy((void*)to, (void*)from, bytes);
 
 	sceKernelDcacheWritebackInvalidateRange((void*)to, bytes);
@@ -387,7 +405,18 @@ void cheat_apply_pspar(Cheat *cheat) {
 				dx_offset += value;
 			} else if(type == 0x0E) {
 				// patch code (0x0E)
-				memcpy((void*)real_address(address), (void*)block + 8, value);
+				u32 patch_dst = real_address(address);
+				u32 patch_len = value;
+
+				// validate the destination falls within game memory
+				if(patch_dst >= cfg.address_start && patch_dst <= cfg.address_end) {
+					// clamp the patch length so the write stays within game memory
+					if(patch_len > cfg.address_end - patch_dst) {
+						patch_len = cfg.address_end - patch_dst;
+					}
+
+					memcpy((void*)patch_dst, (void*)block + 8, patch_len);
+				}
 			} else if(type == 0x0F) {
 				// memory copy code (0x0F)
 				memory_copy(address, dx_offset, value);
@@ -1027,11 +1056,11 @@ void cheat_load(const char *game_id, char dbnum, char index) {
 	// load cwcheat db
 	if(cheat_total == 0) {
 		if(dbnum == -1) {
-			sprintf(buffer, "cheats/%s.db", game_id);
+			snprintf(buffer, sizeof(buffer), "cheats/%s.db", game_id);
 		} else if(dbnum == 0) {
-			sprintf(buffer, "cheat.db");
+			snprintf(buffer, sizeof(buffer), "cheat.db");
 		} else {
-			sprintf(buffer, "cheat%i.db", dbnum);
+			snprintf(buffer, sizeof(buffer), "cheat%i.db", dbnum);
 		}
 
 		cheat_load_db(buffer, game_id, index);
@@ -1040,11 +1069,11 @@ void cheat_load(const char *game_id, char dbnum, char index) {
 	// load pspar db
 	if(cheat_total == 0) {
 		if(dbnum == -1) {
-			sprintf(buffer, "cheats/%s.bin", game_id);
+			snprintf(buffer, sizeof(buffer), "cheats/%s.bin", game_id);
 		} else if(dbnum == 0) {
-			sprintf(buffer, "cheat.bin");
+			snprintf(buffer, sizeof(buffer), "cheat.bin");
 		} else {
-			sprintf(buffer, "cheat%i.bin", dbnum);
+			snprintf(buffer, sizeof(buffer), "cheat%i.bin", dbnum);
 		}
 
 		cheat_load_bin(buffer, game_id, index);
@@ -1052,7 +1081,7 @@ void cheat_load(const char *game_id, char dbnum, char index) {
 
 	// load pspar db
 	if(cheat_total == 0) {
-		sprintf(buffer, "pspar_codes%i.bin", dbnum + 1);
+		snprintf(buffer, sizeof(buffer), "pspar_codes%i.bin", dbnum + 1);
 		cheat_load_bin(buffer, game_id, index);
 	}
 
@@ -1060,12 +1089,12 @@ void cheat_load(const char *game_id, char dbnum, char index) {
 	if(cheat_total == 0) {
 		if(dbnum == -1) {
 			if(cheat_total == 0) {
-				sprintf(buffer, "cheats/%s.txt", game_id);
+				snprintf(buffer, sizeof(buffer), "cheats/%s.txt", game_id);
 				cheat_load_npr(buffer);
 			}
 
 			if(cheat_total == 0) {
-				sprintf(buffer, "ms0:/seplugins/nitePR/%s.txt", game_id);
+				snprintf(buffer, sizeof(buffer), "ms0:/seplugins/nitePR/%s.txt", game_id);
 				cheat_load_npr(buffer);
 			}
 		}
@@ -1415,18 +1444,18 @@ void cheat_save(const char *game_id) {
 
 	sceIoMkdir("cheats", 0777);
 
-	sprintf(buffer, "cheats/%s.db", game_id);
+	snprintf(buffer, sizeof(buffer), "cheats/%s.db", game_id);
 	sceIoRemove(buffer);
 
 	if(cheat_total > 0) {
 		SceUID fd = fileIoOpen(buffer, PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
 
 		if(fd > -1) {
-			sprintf(buffer, "_S %s\n", game_id); // write game id
+			snprintf(buffer, sizeof(buffer), "_S %s\n", game_id); // write game id
 			fileIoWrite(fd, buffer, strlen(buffer));
 
 			if(strlen(game_name) > 0) { // write game name
-				sprintf(buffer, "_G %s\n", game_name);
+				snprintf(buffer, sizeof(buffer), "_G %s\n", game_name);
 				fileIoWrite(fd, buffer, strlen(buffer));
 			}
 
@@ -1434,7 +1463,7 @@ void cheat_save(const char *game_id) {
 			for(i = 0; i < cheat_total; i++) {
 				cheat = cheat_get(i);
 				if(cheat != NULL && (cheat->flags & CHEAT_FAVORITE)) {
-					sprintf(buffer, "_F %d\n", i);
+					snprintf(buffer, sizeof(buffer), "_F %d\n", i);
 					fileIoWrite(fd, buffer, strlen(buffer));
 				}
 			}
@@ -1444,11 +1473,11 @@ void cheat_save(const char *game_id) {
 
 				// write out the cheat name
 				if(cheat->flags & CHEAT_CONSTANT) {
-					sprintf(buffer, "_C2 %s\n", cheat->name);
+					snprintf(buffer, sizeof(buffer), "_C2 %s\n", cheat->name);
 				} else if(cheat->flags & CHEAT_SELECTED) {
-					sprintf(buffer, "_C1 %s\n", cheat->name);
+					snprintf(buffer, sizeof(buffer), "_C1 %s\n", cheat->name);
 				} else {
-					sprintf(buffer, "_C0 %s\n", cheat->name);
+					snprintf(buffer, sizeof(buffer), "_C0 %s\n", cheat->name);
 				}
 
 				// write out the code name
@@ -1460,16 +1489,16 @@ void cheat_save(const char *game_id) {
 					switch(cheat->flags & (CHEAT_CWCHEAT | CHEAT_PSPAR | CHEAT_PSPAR_EXT)) {
 						case CHEAT_CWCHEAT:
 							if(sceKernelInitKeyConfig() == PSP_INIT_KEYCONFIG_POPS) {
-								sprintf(buffer, "_L %08lX %04X\n", block->address, MEM_SHORT(block->value));
+								snprintf(buffer, sizeof(buffer), "_L %08lX %04X\n", block->address, MEM_SHORT(block->value));
 							} else {
-								sprintf(buffer, "_L 0x%08lX 0x%08lX\n", block->address, block->value);
+								snprintf(buffer, sizeof(buffer), "_L 0x%08lX 0x%08lX\n", block->address, block->value);
 							}
 							break;
 						case CHEAT_PSPAR:
-							sprintf(buffer, "_M 0x%08lX 0x%08lX\n", block->address, block->value);
+							snprintf(buffer, sizeof(buffer), "_M 0x%08lX 0x%08lX\n", block->address, block->value);
 							break;
 						case CHEAT_PSPAR_EXT:
-							sprintf(buffer, "_N 0x%08lX 0x%08lX\n", block->address, block->value);
+							snprintf(buffer, sizeof(buffer), "_N 0x%08lX 0x%08lX\n", block->address, block->value);
 							break;
 					}
 
@@ -1512,7 +1541,7 @@ char *gameid_get(char force_refresh) {
 						u8 md5[16];
 						sceKernelUtilsMd5Digest(fileIoGet(), 2048, md5);
 						fileIoClose(fd);
-						sprintf(game_id, "HB%08lX", *(u32*)(md5 + 4) ^ *(u32*)(md5) ^ *(u32*)(md5 + 8) ^ *(u32*)(md5 + 12));
+						snprintf(game_id, sizeof(game_id), "HB%08lX", *(u32*)(md5 + 4) ^ *(u32*)(md5) ^ *(u32*)(md5 + 8) ^ *(u32*)(md5 + 12));
 					}
 				}
 
@@ -1537,19 +1566,30 @@ char *gameid_get(char force_refresh) {
 					fd = sceIoOpen("disc0:/UMD_DATA.BIN", PSP_O_RDONLY, 0777); 
 					if(fd > -1) {
 						sceIoRead(fd, game_id, 10);
+						game_id[10] = 0;
 						sceIoClose(fd);
 					}
 					sceKernelDelayThread(1000);
 				}
 				break;
-			case PSP_INIT_KEYCONFIG_POPS:
+				case PSP_INIT_KEYCONFIG_POPS: {
+				const u32 pops_id_addr = 0x09E80400;
+
 				while(game_id[0] == 0) {
-					memcpy(game_id, (char*)0x09E80400, 4);
-					game_id[4] = '-';
-					memcpy(game_id + 5, (char*)0x09E80404, 5);
+					// validate the POPS game id address is within game memory before reading
+					if(pops_id_addr >= cfg.address_start && pops_id_addr + 8 < cfg.address_end) {
+						memcpy(game_id, (char*)pops_id_addr, 4);
+						game_id[4] = '-';
+						memcpy(game_id + 5, (char*)(pops_id_addr + 4), 5);
+						game_id[10] = 0;
+					} else {
+						break;  // invalid address, fall back to the default game id
+					}
+
 					sceKernelDelayThread(1000);
 				}
 				break;
+				}
 			case PSP_INIT_KEYCONFIG_VSH:
 				strcpy(game_id, "VSH");
 				break;
@@ -1683,7 +1723,7 @@ Cheat *cheat_new(int index, u32 address, u32 value, u8 length, u8 flags, u32 siz
 	Cheat *cheat = cheat_insert(NULL, index);
 
 	if(cheat) {
-		sprintf(cheat->name, "NEW CHEAT %li", cheat_new_no++);
+		snprintf(cheat->name, sizeof(cheat->name), "NEW CHEAT %li", cheat_new_no++);
 		cheat->flags = flags;
 
 		address = real_address(address);
@@ -1759,7 +1799,7 @@ Cheat *cheat_new_from_memory(u32 address_start, u32 address_end) {
 	Cheat *cheat = cheat_add(NULL);
 
 	if(cheat) {
-		sprintf(cheat->name, "NEW CHEAT %li", cheat_new_no);
+		snprintf(cheat->name, sizeof(cheat->name), "NEW CHEAT %li", cheat_new_no);
 		cheat->flags = CHEAT_PSPAR;
 
 		int i;
@@ -2338,18 +2378,29 @@ void patch_apply(const char *path) {
 	SceUID fd = sceIoOpen(path, PSP_O_RDONLY, 0777);
 
 	if(fd > -1) {
+		u32 patch_address = 0;
 		int length;
-		int patch_address;
 
 		// read the address to start the patch
-		sceIoRead(fd, &patch_address, 4);
+		if(sceIoRead(fd, &patch_address, 4) == 4) {
+			// validate the patch address falls within game memory
+			if(patch_address >= cfg.address_start && patch_address < cfg.address_end) {
+				// get the patch size (excluding the 4-byte address header)
+				length = sceIoLseek(fd, 0, SEEK_END) - 4;
+				if(length < 0) {
+					length = 0;
+				}
 
-		// get the patch size
-		length = sceIoLseek(fd, 0, SEEK_END);
+				// clamp the patch length so the write stays within game memory
+				if((u32)length > cfg.address_end - patch_address) {
+					length = cfg.address_end - patch_address;
+				}
 
-		// seek back to the start of the file and apply the patch
-		sceIoLseek(fd, 4, SEEK_SET);
-		sceIoRead(fd, (void*)patch_address, length);
+				// seek back to the start of the patch data and apply it
+				sceIoLseek(fd, 4, SEEK_SET);
+				sceIoRead(fd, (void*)patch_address, length);
+			}
+		}
 
 		sceIoClose(fd);
 	}

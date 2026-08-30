@@ -26,7 +26,7 @@ int filebrowser_display(char *path, char **ext, char ext_count) {
 	} else if(strlen(path) == 0) {
 		strcpy(file_browser->path, plug_path);
 	} else {
-		sprintf(file_browser->path, "%s/%s", plug_path, path);
+		snprintf(file_browser->path, sizeof(file_browser->path), "%s/%s", plug_path, path);
 	}
 
 	filebrowser_cache(file_browser->path, ext, ext_count);

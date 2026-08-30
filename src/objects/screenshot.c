@@ -103,7 +103,7 @@ void screenshot(int priority) {
 
 	do {
 		ss_fcount++;
-		sprintf(path, "%s/snap%03i.bmp", CAPTURE_DIR, ss_fcount);
+		snprintf(path, sizeof(path), "%s/snap%03i.bmp", CAPTURE_DIR, ss_fcount);
 		fd = sceIoOpen(path, PSP_O_RDONLY, 0777);
 		if(fd >= 0) {
 			sceIoClose(fd);

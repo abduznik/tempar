@@ -963,7 +963,7 @@ const char *disasmInstruction(unsigned int opcode, unsigned int PC, unsigned int
 		/* Symbol resolver shouldn't touch addr unless it finds symbol */
 		if(g_symresolver(PC, addrtemp, sizeof(addrtemp)))
 		{
-			sprintf(addr, "%-20s", addrtemp);
+			snprintf(addr, sizeof(addr), "%-20s", addrtemp);
 		}
 	}
 

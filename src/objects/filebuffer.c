@@ -11,7 +11,7 @@ SceUID fileIoOpen(const char *file, int flags, SceMode mode) {
 	if(fd > -1) {
 		if(flags & PSP_O_RDONLY) {
 			if(read_buffer.fd <= 0) {
-				read_buffer.buffer = kmalloc_align(0, PSP_SMEM_Low, FILE_BUFFER_SIZE, 64);
+				read_buffer.buffer = kmalloc_align(0, PSP_SMEM_Low, FILE_BUFFER_SIZE + 1, 64);
 				if(read_buffer.buffer != NULL) {
 					read_buffer.fd = fd;
 					read_buffer.buffer_size = 0;
@@ -81,9 +81,7 @@ int fileIoRead(SceUID fd, void *data, SceSize size) {
 			}
 
 			read_buffer.buffer_size = sceIoRead(fd, read_buffer.buffer, FILE_BUFFER_SIZE);
-			if(read_buffer.buffer_size < FILE_BUFFER_SIZE) {
-				*(u8*)(read_buffer.buffer + read_buffer.buffer_size) = 0;
-			}
+			*(u8*)(read_buffer.buffer + read_buffer.buffer_size) = 0;
 			read_buffer.buffer_offset = 0;
 		}
 	

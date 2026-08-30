@@ -10,7 +10,7 @@ int choose_alloc(SceSize size) {
 	SceUID partitionids[] = {1, 6};
 
 	int i;
-	for(i = 0; i < 3; i++) {
+	for(i = 0; i < (int)(sizeof(partitionids) / sizeof(partitionids[0])); i++) {
 		PspSysmemPartitionInfo info;
 		memset(&info, 0, sizeof(info));
 		info.size = sizeof(info);

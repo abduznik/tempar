@@ -226,7 +226,8 @@ int module_start(int argc, char *argv[]) {
 		}
 	}
 
-	strcpy(boot_path, sceKernelInitFileName());
+	strncpy(boot_path, sceKernelInitFileName(), sizeof(boot_path) - 1);
+	boot_path[sizeof(boot_path) - 1] = 0;
 
 	log("module_start: sceKernelInitFileName (%s)\n", boot_path);
 
