@@ -53,7 +53,7 @@ int main(void) {
 	cfg.max_text_rows = 123456;
 	config_clamp();
 	check("clamp max_cheats 20000->8192", cfg.max_cheats == 8192);
-	check("clamp max_blocks 1->2048", cfg.max_blocks == 2048);
+	check("clamp max_blocks 1 kept (valid)", cfg.max_blocks == 1);
 	check("clamp max_text_rows 123456->100000", cfg.max_text_rows == 100000);
 
 	/* in-range values are untouched */

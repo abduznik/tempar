@@ -1,4 +1,5 @@
 #include "psp_compat.h"
+#include "addr.h"
 #include <pspmodulemgr.h>
 #include <pspctrl.h>
 #include <pspdisplay.h>

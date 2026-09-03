@@ -110,11 +110,6 @@ typedef struct Block {
 	#endif
 } Block;
 
-// TODO
-u32 real_address(u32 address);
-
-// TODO
-u32 address(u32 address);
 
 /**
  * Loads the value from a memory address.
