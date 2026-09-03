@@ -127,18 +127,20 @@ void memory_copy(u32 to, u32 from, u32 bytes) {
 	to = real_address(to);
 	from = real_address(from);
 
-	// validate both addresses fall within game memory before copying
-	if(to < cfg.address_start || to > cfg.address_end ||
-	   from < cfg.address_start || from > cfg.address_end) {
+	// validate both addresses fall within writable PSP memory
+	// (VRAM 0x04000000 .. main RAM top 0x09FFFFFF) before copying;
+	// kernel-scratch and unmapped regions stay rejected.
+	if(to < 0x04000000 || to > 0x09FFFFFF ||
+	   from < 0x04000000 || from > 0x09FFFFFF) {
 		return;
 	}
 
-	// clamp the copy length so reads and writes stay within game memory
-	if(bytes > cfg.address_end - to) {
-		bytes = cfg.address_end - to;
+	// clamp the copy length so reads and writes stay within memory
+	if(bytes > 0x09FFFFFF - to) {
+		bytes = 0x09FFFFFF - to;
 	}
-	if(bytes > cfg.address_end - from) {
-		bytes = cfg.address_end - from;
+	if(bytes > 0x09FFFFFF - from) {
+		bytes = 0x09FFFFFF - from;
 	}
 
 	if(bytes == 0) {
@@ -408,11 +410,11 @@ void cheat_apply_pspar(Cheat *cheat) {
 				u32 patch_dst = real_address(address);
 				u32 patch_len = value;
 
-				// validate the destination falls within game memory
-				if(patch_dst >= cfg.address_start && patch_dst <= cfg.address_end) {
-					// clamp the patch length so the write stays within game memory
-					if(patch_len > cfg.address_end - patch_dst) {
-						patch_len = cfg.address_end - patch_dst;
+				// validate the destination falls within writable PSP memory (VRAM .. main RAM)
+				if(patch_dst >= 0x04000000 && patch_dst <= 0x09FFFFFF) {
+					// clamp the patch length so the write stays within memory
+					if(patch_len > 0x09FFFFFF - patch_dst) {
+						patch_len = 0x09FFFFFF - patch_dst;
 					}
 
 					memcpy((void*)patch_dst, (void*)block + 8, patch_len);
@@ -2383,17 +2385,17 @@ void patch_apply(const char *path) {
 
 		// read the address to start the patch
 		if(sceIoRead(fd, &patch_address, 4) == 4) {
-			// validate the patch address falls within game memory
-			if(patch_address >= cfg.address_start && patch_address < cfg.address_end) {
+			// validate the patch address falls within writable PSP memory (VRAM .. main RAM)
+			if(patch_address >= 0x04000000 && patch_address < 0x09FFFFFF) {
 				// get the patch size (excluding the 4-byte address header)
 				length = sceIoLseek(fd, 0, SEEK_END) - 4;
 				if(length < 0) {
 					length = 0;
 				}
 
-				// clamp the patch length so the write stays within game memory
-				if((u32)length > cfg.address_end - patch_address) {
-					length = cfg.address_end - patch_address;
+				// clamp the patch length so the write stays within memory
+				if((u32)length > 0x09FFFFFF - patch_address) {
+					length = 0x09FFFFFF - patch_address;
 				}
 
 				// seek back to the start of the patch data and apply it
