@@ -117,6 +117,8 @@ void gameResume(SceUID thread_id) {
 	}
 } 
 
+static void write_crash_marker(u32 value);
+
 static int read_crash_marker(void) {
 	SceUID fd = sceIoOpen(CRASH_MARKER_PATH, PSP_O_RDONLY, 0777);
 	if(fd <= -1) {
