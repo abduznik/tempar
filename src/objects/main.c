@@ -53,6 +53,11 @@ char running = 1;
 char buffer[128];
 char screenTime = 0;
 char boot_path[255];
+
+/* crash-safety marker + user notice */
+#define CRASH_MARKER_PATH "crashmark.bin"
+char crash_notice[96];
+int crash_notice_frames;
 char plug_path[255];
 char plug_drive[10];
 
@@ -112,6 +117,27 @@ void gameResume(SceUID thread_id) {
 	}
 } 
 
+static int read_crash_marker(void) {
+	SceUID fd = sceIoOpen(CRASH_MARKER_PATH, PSP_O_RDONLY, 0777);
+	if(fd <= -1) {
+		// first run: initialize a clean marker
+		write_crash_marker(0);
+		return 0;
+	}
+	u32 value = 0;
+	sceIoRead(fd, &value, sizeof(u32));
+	sceIoClose(fd);
+	return (int)value;
+}
+
+static void write_crash_marker(u32 value) {
+	SceUID fd = sceIoOpen(CRASH_MARKER_PATH, PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
+	if(fd > -1) {
+		sceIoWrite(fd, &value, sizeof(u32));
+		sceIoClose(fd);
+	}
+}
+
 int main_thread(SceSize args, void *argp) {
 	// wait for sceKernelLibrary to load
 	while(!sceKernelFindModuleByName("sceKernelLibrary")) {
@@ -141,6 +167,18 @@ int main_thread(SceSize args, void *argp) {
 		cheat_load(NULL, cfg.cheat_file, 0);
 	}
 	log("main_thread: cheats initialized\n");
+
+	// crash recovery: the previous game session ended without a clean
+	// plugin unload (module_stop never ran) — likely a crash caused by an
+	// auto-applied cheat. Disable every enabled cheat and persist that
+	// state so the next boot applies nothing.
+	if(read_crash_marker() == 1) {
+		cheat_disable_all_enabled();
+		write_crash_marker(0);
+	}
+
+	// mark this session active; module_stop() clears it on clean exit
+	write_crash_marker(1);
 
 	// load the language file
 	language_init();
@@ -272,6 +310,9 @@ int module_stop(int argc, char *argv[]) {
 	#ifdef _USB_
 	usb_connect(0);
 	#endif
+
+	// clean exit — clear the crash marker so the next boot is clean
+	write_crash_marker(0);
 
 	return 0;
 }

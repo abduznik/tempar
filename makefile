@@ -1,4 +1,4 @@
-export RELVER := 1.70.2
+export RELVER := 1.70.3
 
 release: prep psp lite pack clean
 release_pr: prep psppr litepr pack clean

@@ -7,6 +7,8 @@
 #include "common.h"
 
 extern Config cfg;
+extern char crash_notice[96];
+extern int crash_notice_frames;
 extern MenuState menu;
 extern char boot_path[];
 
@@ -1522,6 +1524,35 @@ int gameid_matches(const char *id1, const char *id2) {
 	}
 
 	return (_strnicmp(id1, id2, GAME_ID_LENGTH) == 0);
+}
+
+/* Crash recovery: called at boot when the previous game session exited
+ * uncleanly (crashed). Disables every enabled cheat (always-on + selected)
+ * and persists the new state so the next boot applies nothing. */
+void cheat_disable_all_enabled(void) {
+	int i;
+	int disabled = 0;
+
+	for(i = 0; i < cheat_total; i++) {
+		Cheat *cheat = cheat_get(i);
+		if(cheat != NULL && (cheat->flags & (CHEAT_CONSTANT | CHEAT_SELECTED))) {
+			cheat->flags &= ~(CHEAT_CONSTANT | CHEAT_SELECTED);
+			disabled++;
+		}
+	}
+
+	// keep the apply loop idle this session as well
+	cfg.cheat_status = 0;
+
+	if(disabled > 0) {
+		if(game_id[0] != 0) {
+			cheat_save(game_id);
+		}
+		snprintf(crash_notice, sizeof(crash_notice), "crash-safe: disabled %d enabled cheat(s)", disabled);
+	} else {
+		snprintf(crash_notice, sizeof(crash_notice), "crash-safe: no auto cheats were active");
+	}
+	crash_notice_frames = 180;
 }
 
 char *gameid_get(char force_refresh) {
