@@ -179,7 +179,7 @@ void get_print_start_end(int *start, int *end, int num_items, int display_items,
 		*end = (display_items > num_items ? num_items : display_items);
 	}
 
-	*end--;
+	(*end)--;
 }
 
 u32 percentage_to_color(int percent) {

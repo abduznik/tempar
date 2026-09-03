@@ -139,7 +139,9 @@ int fileIoSkipLine(SceUID fd) {
 
 int fileIoWrite(SceUID fd, const void *data, SceSize size) {
 	if(fd == write_buffer.fd) {
-		if(write_buffer.buffer_offset > FILE_BUFFER_LIMIT) {
+		// flush first if the buffered write would overflow the heap buffer
+		if(write_buffer.buffer_offset > 0 &&
+		   (write_buffer.buffer_offset + size > FILE_BUFFER_SIZE)) {
 			if(sceIoWrite(fd, write_buffer.buffer, write_buffer.buffer_offset) != write_buffer.buffer_offset) {
 				return 0;
 			}

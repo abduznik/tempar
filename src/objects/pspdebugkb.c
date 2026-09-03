@@ -270,9 +270,11 @@ void pspDebugKbInit(char* str, int len) {
 							pspDebugKbShift(&shifted);
 							pspDebugKbDrawKey(row, col, 1);
 							break;
-						case 1: // Space
+						case 1: // Space — append in place (snprintf with overlapping
+							        // source/destination is undefined behaviour)
 							if(strlen(str) + 1 < len) {
-								snprintf(str, strlen(str) + 2, "%s ", str);
+								str[strlen(str)] = ' ';
+								str[strlen(str) + 1] = 0;
 								pspDebugKbDrawString(str);
 							}
 							break;

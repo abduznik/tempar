@@ -15,14 +15,27 @@ static void language_process_buffer(void *lang_string, int size) {
 	int i = 0;
 	int index = 0;
 
-	// parse the language file
+	// parse the language file: every 4-byte slot in Language is a char*.
+	// Validate strictly so a malformed/truncated file falls back to the
+	// built-in English strings instead of writing bogus pointers.
 	for(i = 0; i < sizeof(lang); i += 4) {
-		char *string = lang_string + index;
-		*(u32*)((void*)&lang + i) = (u32)string;
-		index += strlen(string) + 1;
-		if(index > size) {
+		if(index >= size) {
 			break;
 		}
+
+		char *string = lang_string + index;
+		int remaining = size - index;
+		int slen = 0;
+
+		while(slen < remaining && string[slen] != 0) {
+			slen++;
+		}
+		if(slen == remaining) {
+			break;  // unterminated string
+		}
+
+		*(u32*)((void*)&lang + i) = (u32)string;
+		index += slen + 1;
 	}
 
 	if(i < sizeof(lang)) {
@@ -56,6 +69,12 @@ int language_load() {
 	char file[64];
 
 	sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_LANGUAGE, &language_system);
+
+	// the system language value comes from the firmware — clamp it before
+	// indexing the languages[] table
+	if(language_system < 0 || language_system >= languages_count) {
+		language_system = 0;
+	}
 
 	if(cfg.language_file == 0) {
 		snprintf(file, sizeof(file), "languages/%s.bin", languages[language_system]);
