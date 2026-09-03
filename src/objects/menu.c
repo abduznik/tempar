@@ -1,5 +1,4 @@
 #include "psp_compat.h"
-#include "addr.h"
 #include <pspmodulemgr.h>
 #include <pspctrl.h>
 #include <pspdisplay.h>
@@ -20,6 +19,7 @@
 #include <pspkerneltypes.h>
 #include <pspthreadman.h>
 #include "common.h"
+#include "addr.h"
 
 extern SceUID thid;
 extern char crash_notice[96];
