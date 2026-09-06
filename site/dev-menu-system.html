@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Menu System - TempAR Developer Docs</title>
+<meta name="description" content="TempAR menu/UI internals: the blocking state machine, tab system, input handling, config persistence, and on-screen keyboard.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext x='1' y='13' font-size='13' fill='%230f2148'%3E%E2%96%B3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<table class="layout" cellpadding="0" cellspacing="0">
+<tr><td class="banner">
+  <table cellpadding="0" cellspacing="0"><tr>
+    <td class="sitename">TempAR</td>
+    <td class="navlinks">
+      <a href="https://github.com/abduznik/tempar">GitHub</a> |
+      <a href="downloads.html">Downloads</a> |
+      <a href="https://github.com/abduznik/tempar/issues">Forums/Bugs</a>
+    </td>
+  </tr></table>
+  <span class="tagline">a CWCheat &amp; PSP Action Replay engine for the PSP</span>
+</td></tr>
+
+<tr><td class="ticker">
+  <marquee behavior="scroll" scrollamount="3">v1.70 is out now - CWCheat + PSPAR in one plugin - favorites &amp; persistence added - works on CFW only, not OFW - searcher up to 253x faster than the old MKUltra code - full changelog inside</marquee>
+</td></tr>
+
+<tr><td>
+<table cellpadding="0" cellspacing="0" style="width:100%;">
+<tr>
+
+<td class="navcol">
+  <div class="navhead">MAIN MENU</div>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="install.html">Install &amp; Hotkeys</a></li>
+    <li><a href="docs.html">Documentation</a></li>
+    <li><a href="downloads.html">Downloads</a></li>
+    <li><a href="changelog.html">Changelog</a></li>
+    <li><a href="develop.html" class="current">Developers</a></li>
+    <li><a href="credits.html">Credits</a></li>
+  </ul>
+  <div class="navhead">EXTERNAL</div>
+  <ul>
+    <li><a href="https://github.com/abduznik/tempar">GitHub Repo</a></li>
+    <li><a href="https://github.com/abduznik/tempar/releases">All Releases</a></li>
+    <li><a href="https://github.com/abduznik/tempar/issues">Report a Bug</a></li>
+  </ul>
+</td>
+
+<td class="maincol">
+
+  <div class="subnav">
+    <b>Dev Docs:</b>
+    <a href="develop.html">Overview</a> &middot;
+    <a href="dev-architecture.html">Architecture</a> &middot;
+    <a href="dev-build.html">Build</a> &middot;
+    <a href="dev-cheat-engine.html">Cheat Engine</a> &middot;
+    <b>Menu System</b> &middot;
+    <a href="dev-disasm-search.html">Disasm/Search</a> &middot;
+    <a href="dev-sdk-usage.html">SDK Usage</a> &middot;
+    <a href="dev-gotchas.html">Gotchas</a>
+  </div>
+
+  <table class="panel">
+    <tr><td class="panelhead">A Blocking State Machine Over a Text Console</td></tr>
+    <tr><td class="panelbody">
+      <p>
+        There's no frame-timed render loop and no custom graphics engine. TempAR's UI draws
+        directly onto PSPSDK's built-in debug-screen text console, aliased via macros in menu.h:
+      </p>
+<pre class="code">#define printf(...) pspDebugScreenKprintf(__VA_ARGS__)
+#define puts pspDebugScreenPuts</pre>
+      <p>
+        Every screen is a <tt>while</tt> loop that blocks on controller input, redraws
+        synchronously, and returns control up the call stack once the user backs out (CIRCLE) or
+        switches tabs (L/R trigger). There's no dirty-rectangle tracking &mdash; screens simply
+        reprint.
+      </p>
+      <p><b>menu_show()</b> is the single entry point into the whole UI, called from <tt>button_callback()</tt> once <tt>menu.visible</tt> is set. It performs PSP-specific setup/teardown:</p>
+      <ol>
+        <li>Hide the system home popup, delay ~150ms.</li>
+        <li>Mask controller input from reaching the game.</li>
+        <li>Snapshot <tt>resume_count</tt> (detects a suspend/resume cycle while the menu is open).</li>
+        <li>Resolve a VRAM pointer via <tt>get_vram()</tt> and re-init the debug screen against it.</li>
+        <li>Optionally pause the game's other threads.</li>
+        <li>Call <tt>layout_tab()</tt> &mdash; the actual UI &mdash; which blocks until closed.</li>
+        <li>Reverse every step above, in reverse order.</li>
+      </ol>
+      <table class="callout">
+        <tr><td class="callouthead">Order-dependent, no RAII</td></tr>
+        <tr><td class="calloutbody">
+          This setup/teardown must be mirrored exactly. There's no cleanup-on-error here &mdash;
+          it's manual. A <tt>layout_*</tt> function that adds a new early-return path deep in the
+          call tree without going through the normal return chain would leave the game's input
+          permanently masked, or the home-button config in the wrong state. Always <tt>return</tt>,
+          never bypass the call stack.
+        </td></tr>
+      </table>
+      <p>
+        <tt>get_vram()</tt> has a fallback path (hardcoded <tt>0x44000000</tt>) when the Impose
+        plugin's framebuffer can't be resolved &mdash; this is the homebrew-without-imposeplugin
+        compatibility path, and it also force-sets <tt>menu.options.force_pause = 1</tt> as a side
+        effect. Intentional, not a bug, but a non-obvious behavior change from an unrelated-looking
+        function.
+      </p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Tab System</td></tr>
+    <tr><td class="panelbody">
+      <p>
+        <tt>layout_tab()</tt> is the top-level UI loop: a switch on the global <tt>char
+        tab_selected</tt> (0-4: Cheater, Searcher, PRX/Options, Browser/Decoder, Credits/GameID),
+        dispatching to one of five <tt>layout_*()</tt> functions, each owning its own inner input
+        loop and returning a <tt>u32</tt> control mask when it exits.
+      </p>
+      <table class="data">
+        <tr><th>Function</th><th>Tab / role</th></tr>
+        <tr><td><tt>layout_heading()</tt></td><td>Draws the tab bar + cheat-engine on/off indicator (shared by every tab)</td></tr>
+        <tr class="alt"><td><tt>layout_cheats()</tt></td><td>Cheater tab &mdash; cheat list browsing/toggling</td></tr>
+        <tr><td><tt>layout_cheatmenu(cheat)</tt></td><td>TRIANGLE popup submenu (edit/rename/copy/delete/favorite)</td></tr>
+        <tr class="alt"><td><tt>layout_cheatedit(cheat)</tt></td><td>Hex/code editor for a cheat's raw lines</td></tr>
+        <tr><td><tt>layout_searcher()</tt></td><td>Searcher tab</td></tr>
+        <tr class="alt"><td><tt>layout_options()</tt></td><td>PRX/Options tab &mdash; settings, hotkey rebinding, config save</td></tr>
+        <tr><td><tt>layout_browser()</tt></td><td>Memory Browser/Disassembler tab</td></tr>
+        <tr class="alt"><td><tt>layout_copymenu(...)</tt></td><td>Address/value copy-paste dialog shared by browser &amp; disassembler</td></tr>
+      </table>
+      <p>Shared drawing helpers: <tt>line_print()</tt>, <tt>line_clear()</tt>, <tt>line_cursor()</tt>, <tt>get_print_start_end()</tt> (computes the visible scroll-window by centering the current selection &mdash; this was the site of the display-order rendering regression, see <a href="dev-cheat-engine.html">Cheat Engine</a>), <tt>percentage_to_color()</tt>, <tt>show_error()</tt>.</p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Input Handling (ctrl.c)</td></tr>
+    <tr><td class="panelbody">
+      <p><tt>ctrl_read()</tt> is the single point where the raw SceCtrlData is polled and turned into TempAR's augmented button mask:</p>
+      <ul>
+        <li>A HOME press, or a resume_count mismatch, forces <tt>menu.visible = 0</tt> &mdash; how the menu auto-closes across suspend/resume.</li>
+        <li>Analog stick tilt is synthesized into dpad bits (threshold &lt;50/&gt;200 on the 0-255 axis).</li>
+        <li>When the menu isn't visible, <tt>PSP_CTRL_CIRCLE</tt> is force-set in the returned mask.</li>
+        <li><tt>cfg.swap_xo</tt> (CROSS/CIRCLE swap) is applied here transparently.</li>
+      </ul>
+      <p>
+        Blocking wait helpers (<tt>ctrl_waitany</tt>, <tt>ctrl_waitkey</tt>, <tt>ctrl_waitmask</tt>,
+        <tt>ctrl_waitrelease</tt>) implement key-repeat via <tt>ctrl_delay()</tt>: while held,
+        <tt>repeat_count</tt> increments (capped at 12) to accelerate repeat speed, using 145ms/9ms
+        by default or a 17ms/1ms "quick" variant for fast-scroll contexts.
+      </p>
+      <p>
+        Global hotkeys are registered via <tt>sceCtrlRegisterButtonCallback</tt> at boot and
+        re-registered three more times inside the options screen whenever the user rebinds a key.
+        <tt>button_callback()</tt> checks <tt>curr_but</tt> against <tt>cfg.menu_key</tt>,
+        <tt>cfg.screen_key</tt>, and <tt>cfg.trigger_key</tt>.
+      </p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Config Persistence (config.c)</td></tr>
+    <tr><td class="panelbody">
+      <p>
+        <tt>Config</tt> is a single <tt>__attribute__((packed))</tt> struct &mdash; ver byte,
+        settings fields, trailing checksum. <b>The struct layout is the file format</b>:
+        <tt>config_load()</tt> reads the version byte, and if it matches <tt>CONFIG_VER</tt>
+        (currently 0x08), reads the rest of the struct as one raw memory blob straight from the
+        file. Field order, packing, and alignment must exactly match between whatever wrote the
+        file and whatever reads it.
+      </p>
+      <table class="callout">
+        <tr><td class="callouthead">No migration path</td></tr>
+        <tr><td class="calloutbody">
+          A version mismatch, failed checksum, or out-of-range field caught by
+          <tt>config_validate()</tt> causes a silent full reset to defaults, not a partial upgrade.
+          <b>Any time you add, remove, or reorder a Config field, bump CONFIG_VER</b> &mdash;
+          otherwise old config files will be misinterpreted rather than rejected.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">On-Screen Keyboard (pspdebugkb.c)</td></tr>
+    <tr><td class="panelbody">
+      <p>
+        A PSPSDK-provided utility (not TempAR-authored) for editing a string in place with the
+        D-pad instead of the system OSK dialog. Draws a fixed 13-column x 4-row character grid plus
+        a 5-item command row. <tt>pspDebugKbInit(str, len)</tt> is the blocking entry point, called
+        from exactly two places: renaming a cheat, and entering search text.
+      </p>
+    </td></tr>
+  </table>
+
+</td>
+</tr>
+</table>
+</td></tr>
+
+<tr><td class="footer">
+  TempAR &copy; abduznik &middot; <a href="https://github.com/abduznik/tempar/blob/master/docs/LICENSE">license</a> &middot; not affiliated with Sony Interactive Entertainment &middot; <a href="https://github.com/abduznik/tempar">source on GitHub</a>
+</td></tr>
+
+</table>
+
+</body>
+</html>

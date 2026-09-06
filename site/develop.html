@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Developers - TempAR</title>
-<meta name="description" content="How TempAR works: architecture overview, build system, and links to the full developer documentation for contributors.">
+<meta name="description" content="Full developer documentation for TempAR: architecture, build system, cheat engine internals, menu/UI system, disassembler and search, PSP SDK usage, and known gotchas.">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext x='1' y='13' font-size='13' fill='%230f2148'%3E%E2%96%B3%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
@@ -53,7 +53,7 @@
 <td class="maincol">
 
   <table class="panel">
-    <tr><td class="panelhead">How TempAR Works</td></tr>
+    <tr><td class="panelhead">Developer Documentation <span class="newflag">[full A-to-Z]</span></td></tr>
     <tr><td class="panelbody">
       <p>
         TempAR is a single PSP kernel-mode plugin (<tt>.prx</tt>) loaded via the plugin loader
@@ -62,55 +62,44 @@
         Action Replay format) to memory once per loop iteration. There's no multi-process
         architecture, no IPC &mdash; everything happens inside that one module.
       </p>
-      <p>Written in C (with some hand-written MIPS assembly), targeting the PSP MIPS toolchain via <a href="https://github.com/pspdev/pspsdk">PSPSDK</a>. Two binaries are produced from the same source tree: a full build (<tt>tempar.prx</tt>) and a lite build (<tt>tempar_lite.prx</tt>) for POPS/memory-constrained modes, differentiated by preprocessor flags.</p>
+      <p>
+        Written in C (with some hand-written MIPS assembly), targeting the PSP MIPS toolchain via
+        <a href="https://github.com/pspdev/pspsdk">PSPSDK</a>. This section is the full internal
+        documentation &mdash; not a summary &mdash; covering everything a contributor needs: module
+        map, build internals, the cheat engine's data model and code type reference, the menu/UI
+        state machine, the disassembler and search engine, PSP SDK usage patterns, and a
+        consolidated list of every toolchain compatibility issue this project has already hit.
+      </p>
     </td></tr>
   </table>
 
   <table class="panel">
-    <tr><td class="panelhead">Major Subsystems</td></tr>
+    <tr><td class="panelhead">Read In Order</td></tr>
     <tr><td class="panelbody">
-      <table class="features">
-        <tr>
-          <td><b>Cheat Engine</b> &mdash; loads, saves, and executes CWCheat/PSPAR/PSPAR Extended code types against live game memory every loop tick.</td>
-          <td><b>Menu / UI</b> &mdash; a blocking state machine drawn directly onto the PSP's debug-screen text console, no custom graphics engine.</td>
-        </tr>
-        <tr>
-          <td><b>Memory Search</b> &mdash; file-backed exact/unknown-value search that survives across menu sessions and reboots.</td>
-          <td><b>MIPS Disassembler</b> &mdash; a vendored PSPLINK-derived instruction decoder powering the browser/decoder screen.</td>
-        </tr>
+      <table class="data">
+        <tr><th>#</th><th>Page</th><th>Covers</th></tr>
+        <tr><td>1</td><td><a href="dev-architecture.html">Architecture</a></td><td>Module map, execution model, data flow, why the codebase leans on global state</td></tr>
+        <tr class="alt"><td>2</td><td><a href="dev-build.html">Build System</a></td><td>Docker/PSPSDK build process, every makefile target explained, full vs. lite, CI</td></tr>
+        <tr><td>3</td><td><a href="dev-cheat-engine.html">Cheat Engine</a></td><td>Cheat/Block data model, CWCheat vs. PSPAR, load/apply/save pipeline, favorites, v1.70 security hardening</td></tr>
+        <tr class="alt"><td>4</td><td><a href="dev-menu-system.html">Menu System</a></td><td>The blocking UI state machine, input handling, config persistence, on-screen keyboard</td></tr>
+        <tr><td>5</td><td><a href="dev-disasm-search.html">Disassembler, Search &amp; Browser</a></td><td>The vendored MIPS decoder, the file-backed memory search engine, file browser</td></tr>
+        <tr class="alt"><td>6</td><td><a href="dev-sdk-usage.html">SDK Usage</a></td><td>module_start/stop lifecycle, what each support module wraps, exports.exp/imports.S</td></tr>
+        <tr><td>7</td><td><a href="dev-gotchas.html">Gotchas &amp; Pitfalls</a></td><td>Every PSPSDK/GCC compat fix traced to root cause, plus every known footgun in the codebase</td></tr>
       </table>
     </td></tr>
   </table>
 
   <table class="panel">
-    <tr><td class="panelhead">Building From Source</td></tr>
+    <tr><td class="panelhead">At a Glance</td></tr>
     <tr><td class="panelbody">
-      <p>No local PSP toolchain install required &mdash; everything runs through Docker:</p>
-      <p><tt>docker run -it -v "${PWD}:/src" -w "/src" pspdev/pspsdk make release</tt></p>
-      <p>This produces both PRX builds packaged as a <tt>.zip</tt> in a <tt>build</tt> folder. CI builds and publishes releases automatically via GitHub Actions on every tag push.</p>
-    </td></tr>
-  </table>
-
-  <table class="panel">
-    <tr><td class="panelhead">Full Developer Documentation</td></tr>
-    <tr><td class="panelbody">
-      <p>
-        This page is a summary. Contributors and anyone digging into the internals should read
-        the full developer documentation in the repository &mdash; it covers architecture, the
-        build system in detail, cheat engine internals, the menu/UI layer, PSP SDK usage, and a
-        consolidated list of every PSPSDK/toolchain compatibility issue hit so far (with root
-        causes, sourced from git history).
-      </p>
-      <p><a href="https://github.com/abduznik/tempar/tree/master/DEVELOPER"><b>&raquo; Browse DEVELOPER/ on GitHub</b></a></p>
-      <table class="data">
-        <tr><th>Page</th><th>Covers</th></tr>
-        <tr><td><a href="https://github.com/abduznik/tempar/blob/master/DEVELOPER/ARCHITECTURE.md">Architecture</a></td><td>Module map, execution model, data flow</td></tr>
-        <tr class="alt"><td><a href="https://github.com/abduznik/tempar/blob/master/DEVELOPER/BUILD.md">Build System</a></td><td>Docker/PSPSDK build process, makefile targets, CI</td></tr>
-        <tr><td><a href="https://github.com/abduznik/tempar/blob/master/DEVELOPER/CHEAT_ENGINE.md">Cheat Engine</a></td><td>Data model, code types, load/apply/save pipeline</td></tr>
-        <tr class="alt"><td><a href="https://github.com/abduznik/tempar/blob/master/DEVELOPER/MENU_SYSTEM.md">Menu System</a></td><td>UI state machine, input handling, config persistence</td></tr>
-        <tr><td><a href="https://github.com/abduznik/tempar/blob/master/DEVELOPER/DISASM_SEARCH_BROWSER.md">Disassembler, Search &amp; Browser</a></td><td>MIPS decoder, memory search internals, file browser</td></tr>
-        <tr class="alt"><td><a href="https://github.com/abduznik/tempar/blob/master/DEVELOPER/SDK_USAGE.md">SDK Usage</a></td><td>Module lifecycle, support modules, exports/imports</td></tr>
-        <tr><td><a href="https://github.com/abduznik/tempar/blob/master/DEVELOPER/GOTCHAS.md">Gotchas</a></td><td>Every PSPSDK/GCC compat fix, traced to its root cause</td></tr>
+      <table class="stats">
+        <tr>
+          <td><span class="statnum">21</span><span class="statlabel">Source Modules</span></td>
+          <td><span class="statnum">~11,800</span><span class="statlabel">Lines of C</span></td>
+          <td><span class="statnum">2</span><span class="statlabel">PRX Builds</span></td>
+          <td><span class="statnum">16</span><span class="statlabel">Compat-fix Commits</span></td>
+          <td><span class="statnum">2</span><span class="statlabel">Vendored Modules</span></td>
+        </tr>
       </table>
     </td></tr>
   </table>
@@ -120,6 +109,7 @@
     <tr><td class="panelbody">
       <p>Found a bug or want to add a feature? Open an issue or pull request on GitHub:</p>
       <p><a href="https://github.com/abduznik/tempar/issues">&raquo; github.com/abduznik/tempar/issues</a></p>
+      <p>The source-of-truth markdown for this section lives in <a href="https://github.com/abduznik/tempar/tree/master/DEVELOPER">DEVELOPER/</a> in the repo, if you'd rather read it there or link to a specific line.</p>
     </td></tr>
   </table>
 

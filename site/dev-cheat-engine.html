@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cheat Engine Internals - TempAR Developer Docs</title>
+<meta name="description" content="TempAR cheat engine internals: Cheat/Block data model, CWCheat vs PSPAR, load/apply/save pipeline, favorites, and v1.70 security hardening.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext x='1' y='13' font-size='13' fill='%230f2148'%3E%E2%96%B3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<table class="layout" cellpadding="0" cellspacing="0">
+<tr><td class="banner">
+  <table cellpadding="0" cellspacing="0"><tr>
+    <td class="sitename">TempAR</td>
+    <td class="navlinks">
+      <a href="https://github.com/abduznik/tempar">GitHub</a> |
+      <a href="downloads.html">Downloads</a> |
+      <a href="https://github.com/abduznik/tempar/issues">Forums/Bugs</a>
+    </td>
+  </tr></table>
+  <span class="tagline">a CWCheat &amp; PSP Action Replay engine for the PSP</span>
+</td></tr>
+
+<tr><td class="ticker">
+  <marquee behavior="scroll" scrollamount="3">v1.70 is out now - CWCheat + PSPAR in one plugin - favorites &amp; persistence added - works on CFW only, not OFW - searcher up to 253x faster than the old MKUltra code - full changelog inside</marquee>
+</td></tr>
+
+<tr><td>
+<table cellpadding="0" cellspacing="0" style="width:100%;">
+<tr>
+
+<td class="navcol">
+  <div class="navhead">MAIN MENU</div>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="install.html">Install &amp; Hotkeys</a></li>
+    <li><a href="docs.html">Documentation</a></li>
+    <li><a href="downloads.html">Downloads</a></li>
+    <li><a href="changelog.html">Changelog</a></li>
+    <li><a href="develop.html" class="current">Developers</a></li>
+    <li><a href="credits.html">Credits</a></li>
+  </ul>
+  <div class="navhead">EXTERNAL</div>
+  <ul>
+    <li><a href="https://github.com/abduznik/tempar">GitHub Repo</a></li>
+    <li><a href="https://github.com/abduznik/tempar/releases">All Releases</a></li>
+    <li><a href="https://github.com/abduznik/tempar/issues">Report a Bug</a></li>
+  </ul>
+</td>
+
+<td class="maincol">
+
+  <div class="subnav">
+    <b>Dev Docs:</b>
+    <a href="develop.html">Overview</a> &middot;
+    <a href="dev-architecture.html">Architecture</a> &middot;
+    <a href="dev-build.html">Build</a> &middot;
+    <b>Cheat Engine</b> &middot;
+    <a href="dev-menu-system.html">Menu System</a> &middot;
+    <a href="dev-disasm-search.html">Disasm/Search</a> &middot;
+    <a href="dev-sdk-usage.html">SDK Usage</a> &middot;
+    <a href="dev-gotchas.html">Gotchas</a>
+  </div>
+
+  <table class="panel">
+    <tr><td class="panelhead">Data Model</td></tr>
+    <tr><td class="panelbody">
+      <p>Two flat, pre-allocated arrays hold everything (allocated once in <tt>cheat_init</tt>, sized by <tt>cfg.max_cheats</tt>/<tt>cfg.max_blocks</tt> from config.bin):</p>
+<pre class="code">typedef struct Cheat {
+    char name[32];        /* displayed name */
+    struct Cheat *parent; /* parent folder, for nesting */
+    u16 block;             /* start index into the block array */
+    u8 length;              /* number of code lines */
+    u8 flags;               /* CheatFlags bitmask */
+} Cheat;
+
+typedef struct Block {
+    u32 address;  /* address of the code */
+    u32 value;    /* value of the code */
+} Block;</pre>
+      <p>
+        <b>Cheat</b> &mdash; one entry per cheat <i>or</i> per folder/comment (folders and comments
+        are just cheats with <tt>length == 0</tt> and specific flag bits set). A cheat's code lines
+        are <tt>blocks[cheat-&gt;block .. cheat-&gt;block + cheat-&gt;length)</tt>.
+      </p>
+      <p><tt>Cheat.flags</tt> packs several orthogonal concerns into one byte:</p>
+      <table class="data">
+        <tr><th>Flag</th><th>Meaning</th></tr>
+        <tr><td><tt>CHEAT_HIDDEN</tt></td><td>Containing folder is collapsed (display state)</td></tr>
+        <tr class="alt"><td><tt>CHEAT_FRESH</tt></td><td>Just toggled on/off, not yet (re-)applied &mdash; used by the auto-off backup/restore logic</td></tr>
+        <tr><td><tt>CHEAT_SELECTED</tt></td><td>User has this cheat checked on</td></tr>
+        <tr class="alt"><td><tt>CHEAT_CONSTANT</tt></td><td>Cheat is always-on regardless of the global enable toggle</td></tr>
+        <tr><td><tt>CHEAT_CWCHEAT</tt> / <tt>CHEAT_PSPAR</tt> / <tt>CHEAT_PSPAR_EXT</tt></td><td>Which engine parses/executes this cheat's code lines</td></tr>
+        <tr class="alt"><td><tt>CHEAT_FAVORITE</tt></td><td>Displayed at top of the list (added in v1.65)</td></tr>
+      </table>
+      <p>Folders reuse the same struct with <tt>FolderFlags</tt>: <tt>FOLDER_EXPANDED</tt>/<tt>FOLDER_COLLAPSED</tt> (display state) and <tt>FOLDER_SINGLE_SELECT</tt>/<tt>FOLDER_MULTI_SELECT</tt>/<tt>FOLDER_COMMENT</tt> (behavior &mdash; single-select acts like a radio group, multi-select like independent checkboxes, comment folders are visual grouping only).</p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Two Engines, One File Format</td></tr>
+    <tr><td class="panelbody">
+      <p>TempAR supports two independently-implemented code interpreters:</p>
+      <ul>
+        <li><b>CWCheat</b> &mdash; <tt>cheat_apply_cwcheat()</tt>. Standard CWCheat code types (constant write, pointer chains including multi-level/multi-write, conditionals, etc). On POPS (PS1-on-PSP), CWCheat-flagged cheats are instead run through <tt>cheat_apply_psx_gs()</tt> (PSX GameShark format).</li>
+        <li><b>PSPAR / PSPAR Extended</b> &mdash; <tt>cheat_apply_pspar()</tt>. Datel's PSP Action Replay code types, plus TempAR's own <tt>_N</tt>-prefixed extended type set (register operations, safe data store, counters, call-function-with-args, etc).</li>
+      </ul>
+      <p>
+        Which engine parses a cheat is decided <b>at load time</b> based on the code name prefix on
+        the <i>last</i> line of the code block in the source file (<tt>_C0</tt>/<tt>_C1</tt>/<tt>_C2</tt>/<tt>_N</tt>/etc), and is stored permanently as one of the <tt>CHEAT_CWCHEAT</tt>/<tt>CHEAT_PSPAR</tt>/<tt>CHEAT_PSPAR_EXT</tt> flag bits. A single code cannot mix both engines' line types.
+      </p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Load &rarr; Memory &rarr; Apply Pipeline</td></tr>
+    <tr><td class="panelbody">
+      <ol>
+        <li><b>cheat_init(num_cheats, num_blocks, auto_off)</b> &mdash; called once from main_thread, allocates the Cheat/Block arrays via kmalloc and optionally an <tt>original_values</tt> backup buffer if auto-off is enabled.</li>
+        <li><b>cheat_load(game_id, dbnum, index)</b> &mdash; tries, in order: the game's saved .db file, then falls back through <tt>cheat_load_db</tt> (CWCheat/PSPAR text format), <tt>cheat_load_bin</tt> (PSPAR .bin database), and <tt>cheat_load_npr</tt> (NitePR .txt, converted to PSPAR on the fly).</li>
+        <li><b>cheat_load_db</b> &mdash; streams the source file through the filebuffer line/word reader, building up Cheat/Block entries as it goes. Favorite markers (<tt>_F &lt;index&gt;</tt> lines) are collected into a deferred list and applied after all cheats are loaded, since a cheat's final index isn't known until the whole file is parsed.</li>
+        <li><b>cheat_apply(action)</b> &mdash; runs every plugin loop tick. For each cheat: if auto-off is compiled in, runs the backup/restore state machine first (lets a plain constant-write code be safely turned off without a matching "off" code, by restoring the original memory value). Then, if the cheat is active, dispatches to the matching engine. Reapplying every tick (rather than once) is what makes memory-patching codes "sticky" against game code that keeps overwriting the same addresses.</li>
+        <li><b>cheat_save(game_id)</b> &mdash; writes the current in-memory cheat list back out to the per-game .db file, including <tt>_F</tt> lines for favorited cheats.</li>
+      </ol>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Address Model</td></tr>
+    <tr><td class="panelbody">
+      <p>
+        <tt>address_load</tt>/<tt>address_set</tt> are the single choke point for all cheat memory
+        reads/writes, taking a <tt>type</tt> byte encoding 8/16/32-bit width, OR'd with
+        <tt>CHEAT_REAL_ADDRESS</tt> to permit addresses outside normal user memory (kernel/hardware
+        register ranges &mdash; used by the "fake addresses" pad-state read feature, and by the
+        browser/decoder in real-address mode). If you're adding a new code type that touches
+        memory, go through these functions rather than dereferencing pointers directly.
+      </p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Favorites <span style="font-weight:normal;">(added v1.65, hardened v1.70)</span></td></tr>
+    <tr><td class="panelbody">
+      <p>Added in commit <tt>be643f5</tt>:</p>
+      <ul>
+        <li>New <tt>CHEAT_FAVORITE</tt> flag (<tt>0x80</tt>).</li>
+        <li>Favorited cheats show first, then non-favorites in original order &mdash; implemented via <tt>cheat_get_by_display_index()</tt> and <tt>cheat_visible_count()</tt>, which compute a display-order index separate from the underlying storage index, rather than physically reordering the Cheat array.</li>
+        <li>Toggled from the TRIANGLE cheat menu ("Add/Remove Favorite").</li>
+        <li>Persisted in .db files as <tt>_F &lt;index&gt;</tt> lines &mdash; a new, unrecognized-by-old-parsers line type, chosen deliberately so older TempAR builds simply ignore the line rather than failing to parse the file.</li>
+      </ul>
+      <table class="callout">
+        <tr><td class="callouthead">Real bug, real fix</td></tr>
+        <tr><td class="calloutbody">
+          <b>Follow-up fix (8080309):</b> the initial implementation toggled the in-memory flag but
+          never called <tt>cheat_save()</tt>, so favorite status was lost on next boot/reload.
+          One-line fix: call <tt>cheat_save(gameid_get(0))</tt> right after
+          <tt>cheat_toggle_favorite()</tt> in the menu handler. If you add another piece of
+          per-cheat mutable state, remember it needs the same explicit save call &mdash; there's no
+          automatic dirty-tracking/autosave in this codebase.
+        </td></tr>
+      </table>
+      <table class="callout">
+        <tr><td class="callouthead">Rendering regression (21dac59)</td></tr>
+        <tr><td class="calloutbody">
+          Introducing display-order indexing changed the cheat list's on-screen scroll-window
+          calculation, which shrank the visible window to ~13 items near the top of the list
+          instead of the intended 25. Fixed by reworking the window math in
+          <tt>layout_cheats()</tt> to always maintain a full 25-item window. See
+          <a href="dev-menu-system.html">Menu System</a> for the general pattern this function
+          follows.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Security Hardening <span style="font-weight:normal;">(v1.70, commit 21dac59)</span></td></tr>
+    <tr><td class="panelbody">
+      <p>A dedicated pass fixed ten numbered issues, mostly unchecked-length / unchecked-address bugs typical of code from an era before this class of bug was taken as seriously:</p>
+      <ol>
+        <li><tt>boot_path</tt> wasn't guaranteed null-terminated after <tt>strncpy</tt> &mdash; fixed by explicit null-termination.</li>
+        <li><tt>memory_copy</tt> had no bounds check against the game's valid memory range &mdash; now clamped.</li>
+        <li>The PSPAR 0x0E "patch" code type didn't validate its destination address/length before writing &mdash; now validated.</li>
+        <li>All <tt>sprintf</tt> call sites replaced with <tt>snprintf</tt> across the codebase.</li>
+        <li><tt>game_id</tt> wasn't guaranteed null-terminated after UMD/POPS reads &mdash; fixed.</li>
+        <li><tt>kmalloc.c</tt>'s partition-ID loop had an out-of-bounds iteration bug &mdash; fixed via a sizeof-based bound.</li>
+        <li>The file-buffer read buffer wasn't guaranteed null-terminated &mdash; now allocated +1 byte and always terminated.</li>
+        <li><tt>patch_apply</tt> (memory patch file loader) didn't validate address + length before writing &mdash; now validated.</li>
+        <li>The POPS game-ID address wasn't validated before being dereferenced &mdash; now validated.</li>
+        <li><tt>config.c</tt> gained a checksum plus field clamping/validation on load, so a corrupted or hand-edited config.bin can't push out-of-range values into cheat_init's allocation sizing.</li>
+      </ol>
+      <p>If you're adding a new file parser, memory-writing code path, or fixed-size buffer fill, treat these ten as the checklist: null-terminate after every fixed-size string copy, validate lengths/addresses before any write derived from file/user input, and prefer <tt>snprintf</tt> over <tt>sprintf</tt> by default.</p>
+    </td></tr>
+  </table>
+
+</td>
+</tr>
+</table>
+</td></tr>
+
+<tr><td class="footer">
+  TempAR &copy; abduznik &middot; <a href="https://github.com/abduznik/tempar/blob/master/docs/LICENSE">license</a> &middot; not affiliated with Sony Interactive Entertainment &middot; <a href="https://github.com/abduznik/tempar">source on GitHub</a>
+</td></tr>
+
+</table>
+
+</body>
+</html>

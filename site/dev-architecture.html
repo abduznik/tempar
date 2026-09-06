@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Architecture - TempAR Developer Docs</title>
+<meta name="description" content="TempAR architecture: module map, execution model, data flow from cheat file to game memory, and why the codebase relies on global state.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext x='1' y='13' font-size='13' fill='%230f2148'%3E%E2%96%B3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<table class="layout" cellpadding="0" cellspacing="0">
+<tr><td class="banner">
+  <table cellpadding="0" cellspacing="0"><tr>
+    <td class="sitename">TempAR</td>
+    <td class="navlinks">
+      <a href="https://github.com/abduznik/tempar">GitHub</a> |
+      <a href="downloads.html">Downloads</a> |
+      <a href="https://github.com/abduznik/tempar/issues">Forums/Bugs</a>
+    </td>
+  </tr></table>
+  <span class="tagline">a CWCheat &amp; PSP Action Replay engine for the PSP</span>
+</td></tr>
+
+<tr><td class="ticker">
+  <marquee behavior="scroll" scrollamount="3">v1.70 is out now - CWCheat + PSPAR in one plugin - favorites &amp; persistence added - works on CFW only, not OFW - searcher up to 253x faster than the old MKUltra code - full changelog inside</marquee>
+</td></tr>
+
+<tr><td>
+<table cellpadding="0" cellspacing="0" style="width:100%;">
+<tr>
+
+<td class="navcol">
+  <div class="navhead">MAIN MENU</div>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="install.html">Install &amp; Hotkeys</a></li>
+    <li><a href="docs.html">Documentation</a></li>
+    <li><a href="downloads.html">Downloads</a></li>
+    <li><a href="changelog.html">Changelog</a></li>
+    <li><a href="develop.html" class="current">Developers</a></li>
+    <li><a href="credits.html">Credits</a></li>
+  </ul>
+  <div class="navhead">EXTERNAL</div>
+  <ul>
+    <li><a href="https://github.com/abduznik/tempar">GitHub Repo</a></li>
+    <li><a href="https://github.com/abduznik/tempar/releases">All Releases</a></li>
+    <li><a href="https://github.com/abduznik/tempar/issues">Report a Bug</a></li>
+  </ul>
+</td>
+
+<td class="maincol">
+
+  <div class="subnav">
+    <b>Dev Docs:</b>
+    <a href="develop.html">Overview</a> &middot;
+    <b>Architecture</b> &middot;
+    <a href="dev-build.html">Build</a> &middot;
+    <a href="dev-cheat-engine.html">Cheat Engine</a> &middot;
+    <a href="dev-menu-system.html">Menu System</a> &middot;
+    <a href="dev-disasm-search.html">Disasm/Search</a> &middot;
+    <a href="dev-sdk-usage.html">SDK Usage</a> &middot;
+    <a href="dev-gotchas.html">Gotchas</a>
+  </div>
+
+  <table class="panel">
+    <tr><td class="panelhead">The Big Picture</td></tr>
+    <tr><td class="panelbody">
+      <p>
+        TempAR is a single PSP kernel-mode PRX module. There is no multi-process architecture, no
+        IPC, no separate "backend" &mdash; it's one <tt>.prx</tt> file loaded into the address space
+        of whatever game/homebrew is running, via the PSP's plugin system (<tt>seplugins</tt>).
+        Everything described on this page happens inside that one module.
+      </p>
+<pre class="code">module_start()                       [src/objects/main.c]
+   |  records the plugin's own boot path, snapshots the current thread list
+   +- spawns "TempAR_thread" -&gt; main_thread()
+                                         |
+                                         |  one-time init (in order):
+                                         |   config_load()      - settings from config.bin
+                                         |   gameid_get()       - identify the running game
+                                         |   cheat_init()       - allocate cheat/block pools
+                                         |   cheat_load()       - load cheats for this game id
+                                         |   language_init/load - UI strings
+                                         |   psid_init()        - (optional) PSID corruption
+                                         |   screenshot_init()  - (optional)
+                                         |   search_init()      - resume any in-progress search
+                                         |   menu_init()        - zero UI state
+                                         |   sceCtrlRegisterButtonCallback(button_callback)
+                                         |
+                                         +- while(running):
+                                               if menu.visible      -&gt; menu_show()   (blocking UI)
+                                               else if cheat_hz set -&gt; cheat_apply(0) (apply cheats)
+                                               screenshot handling
+                                               sceKernelDelayThread(cheat_hz or 15ms)</pre>
+      <p>
+        <tt>module_stop()</tt> tears this down: flips <tt>running = 0</tt>, waits (with a timeout +
+        forced terminate) for the thread to exit, then frees cheat/language/text-viewer memory and
+        disconnects USB.
+      </p>
+      <p>
+        This is the entire lifecycle. There's no event loop framework, no scheduler beyond the
+        PSP's own kernel threads, and no persistent background service beyond this one thread.
+      </p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Module Map</td></tr>
+    <tr><td class="panelbody">
+      <table class="data">
+        <tr><th>Module</th><th>Files</th><th>Responsibility</th></tr>
+        <tr><td>Entry point</td><td><tt>main.c</tt> / <tt>main.h</tt></td><td><tt>module_start</tt>/<tt>module_stop</tt>, the main thread loop, global hotkey dispatch (<tt>button_callback</tt>), game-thread pause/resume</td></tr>
+        <tr class="alt"><td>Cheat engine</td><td><tt>cheat.c</tt> / <tt>cheat.h</tt></td><td>Cheat/Block data model, loading cheats from .db/.bin/.txt/NitePR files, saving, and executing CWCheat/PSPAR code types against memory every loop tick</td></tr>
+        <tr><td>Menu / UI</td><td><tt>menu.c</tt> / <tt>menu.h</tt></td><td>All on-screen menus: cheat list, searcher, options, browser/decoder, credits. Owns the tab state machine</td></tr>
+        <tr class="alt"><td>Input</td><td><tt>ctrl.c</tt> / <tt>ctrl.h</tt></td><td>Controller polling, CROSS/CIRCLE swap, analog&rarr;dpad synthesis, key-repeat, blocking wait helpers</td></tr>
+        <tr><td>Config</td><td><tt>config.c</tt> / <tt>config.h</tt></td><td>Loads/saves config.bin (raw packed struct + checksum) and colors/colorN.txt skin files</td></tr>
+        <tr class="alt"><td>Search</td><td><tt>search.c</tt> / <tt>search.h</tt></td><td>Memory search ("cheat finder") &mdash; exact/unknown search across 8/16/32-bit values, backed by files so searches persist across sessions</td></tr>
+        <tr><td>Disassembler</td><td><tt>disasm.c</tt> / <tt>disasm.h</tt></td><td>MIPS instruction decoder, vendored from PSPLINK &mdash; feeds the in-menu "Decoder" screen</td></tr>
+        <tr class="alt"><td>File browser</td><td><tt>filebrowser.c</tt></td><td>Lists/navigates memory stick directories for loading text/patch/cheat files</td></tr>
+        <tr><td>File buffering</td><td><tt>filebuffer.c</tt></td><td>Buffered file I/O helpers used everywhere instead of raw sceIo* calls</td></tr>
+        <tr class="alt"><td>On-screen keyboard</td><td><tt>pspdebugkb.c</tt></td><td>Vendored PSPSDK utility for text entry without the system OSK</td></tr>
+        <tr><td>Text/guide viewer</td><td><tt>text.c</tt></td><td>Pages through an arbitrary text file for the in-menu game guide viewer</td></tr>
+        <tr class="alt"><td>Language</td><td><tt>language.c</tt></td><td>Loads a binary string table so the UI can be shown in multiple languages</td></tr>
+        <tr><td>PSID</td><td><tt>psid.c</tt></td><td>Deliberately corrupts the PSP's PSID for network anti-cheat evasion</td></tr>
+        <tr class="alt"><td>Screenshot</td><td><tt>screenshot.c</tt></td><td>Captures the framebuffer to a file on a hotkey</td></tr>
+        <tr><td>USB</td><td><tt>usb.c</tt></td><td>Toggles USB mass-storage mode so a PC can read the memory stick without rebooting</td></tr>
+        <tr class="alt"><td>kmalloc</td><td><tt>kmalloc.c</tt></td><td>Kernel partition-memory allocator wrapper</td></tr>
+        <tr><td>syslibc</td><td><tt>syslibc.c</tt></td><td>Minimal libc-shaped shims the kernel-mode libc doesn't provide</td></tr>
+        <tr class="alt"><td>float</td><td><tt>float.c</tt></td><td>Float/fixed-point helpers used by a couple of PSPAR-extended code types</td></tr>
+        <tr><td>utils</td><td><tt>utils.c</tt></td><td>Game ID resolution, misc string/memory helpers</td></tr>
+        <tr class="alt"><td>log</td><td><tt>log.c</tt></td><td>Debug logging to a file, compiled out unless <tt>_DEBUG_</tt> is set</td></tr>
+        <tr><td>SDK shim</td><td><tt>sdk.c</tt></td><td>Small exported API surface for third-party PRX plugins</td></tr>
+      </table>
+      <p><tt>common.h</tt> is the "include everything" header &mdash; nearly every <tt>.c</tt> file includes only <tt>common.h</tt> plus whatever PSPSDK headers it needs directly.</p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Two Binaries, One Source Tree</td></tr>
+    <tr><td class="panelbody">
+      <p>The build produces two PRX files from the same source files, differentiated entirely by preprocessor defines set in the makefile:</p>
+      <ul>
+        <li><b>tempar.prx</b> &mdash; full build: CWCheat + PSPAR + USB + PSID + screenshots + guide viewer + UMD dump + module list + thread list + disassembler + auto-off + multi-language.</li>
+        <li><b>tempar_lite.prx</b> &mdash; drops USB, PSID, UMD dump, module list, thread list (smaller memory footprint); used for POPS (PS1-on-PSP) and other memory-constrained game modes.</li>
+      </ul>
+      <p>Because both binaries share every <tt>.c</tt> file, most feature code is wrapped in <tt>#ifdef _FEATURE_</tt> guards rather than living in separate files. See the <a href="dev-build.html">Build System</a> page for the full flag reference.</p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Data Flow: Cheat File to Game Memory</td></tr>
+    <tr><td class="panelbody">
+      <ol>
+        <li><b>Load.</b> <tt>cheat_load()</tt> is called once at boot with the resolved game ID. It tries, in order: the plugin's own <tt>cheat.db</tt> (indexed multi-game database), then per-game <tt>.txt</tt> CWCheat/PSPAR files, then a PSPAR <tt>.bin</tt> file, then a NitePR <tt>.txt</tt> file (converted to PSPAR format on load).</li>
+        <li><b>Toggle.</b> The user opens the menu, navigates the Cheater tab, and presses CROSS/SQUARE to flip <tt>CHEAT_SELECTED</tt>/<tt>CHEAT_CONSTANT</tt> bits on a cheat's flags. This does not touch memory yet.</li>
+        <li><b>Apply.</b> Every iteration of the main loop, <tt>cheat_apply(0)</tt> walks the whole cheat list and, for every enabled cheat, dispatches to <tt>cheat_apply_cwcheat()</tt>, <tt>cheat_apply_pspar()</tt>, or <tt>cheat_apply_psx_gs()</tt> depending on the cheat's engine flag.</li>
+        <li><b>Persist.</b> <tt>cheat_save()</tt> writes the current in-memory cheat list back out to <tt>cheats/{game-id}.db</tt> so new cheats, edits, and favorite/order changes survive a reboot.</li>
+      </ol>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Why So Much Global State</td></tr>
+    <tr><td class="panelbody">
+      <p>
+        This is homebrew for a single-core, no-MMU-protection, cooperative-ish embedded target with
+        32-64MB of RAM. There is exactly one "session" (one game running, one plugin instance), so
+        there was never a reason to avoid module-level globals (<tt>cheats</tt>, <tt>blocks</tt>,
+        <tt>cfg</tt>, <tt>menu</tt>, <tt>search</tt>, <tt>game_id</tt>, etc.) &mdash; they <i>are</i>
+        the application state, shared via <tt>extern</tt> across files. If you're coming from
+        application/server development, expect this pattern everywhere rather than passed-around
+        context objects. See the <a href="dev-gotchas.html">Gotchas</a> page for the specific ways
+        this bites contributors.
+      </p>
+    </td></tr>
+  </table>
+
+</td>
+</tr>
+</table>
+</td></tr>
+
+<tr><td class="footer">
+  TempAR &copy; abduznik &middot; <a href="https://github.com/abduznik/tempar/blob/master/docs/LICENSE">license</a> &middot; not affiliated with Sony Interactive Entertainment &middot; <a href="https://github.com/abduznik/tempar">source on GitHub</a>
+</td></tr>
+
+</table>
+
+</body>
+</html>

@@ -253,6 +253,67 @@ kbd {
   font-size: 12px;
 }
 
+/* code blocks for build commands, C snippets, file paths */
+pre.code {
+  background-color: #0c1424;
+  color: #cfe0ff;
+  border: 1px solid #16294a;
+  padding: 8px 10px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12.5px;
+  overflow-x: auto;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+pre.code .cm { color: #7a99c9; }
+pre.code .kw { color: #ffcc66; }
+pre.code .st { color: #a0e8a0; }
+
+code.inline {
+  font-family: "Courier New", Courier, monospace;
+  background-color: #eeeeee;
+  border: 1px solid #c8c8c8;
+  padding: 0 3px;
+  font-size: 12.5px;
+}
+
+/* sub-nav strip for multi-page sections (e.g. developer docs) */
+.subnav {
+  background-color: #f0f3f8;
+  border: 1px solid #9fb0cc;
+  padding: 5px 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.subnav b { color: #0f2148; margin-right: 4px; }
+.subnav a { margin-right: 2px; }
+
+/* warning / callout box, used for gotchas */
+table.callout {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #cc9900;
+  margin-bottom: 8px;
+}
+
+table.callout td.callouthead {
+  background-color: #fff2c0;
+  color: #7a4b00;
+  font-weight: bold;
+  padding: 4px 7px;
+  border-bottom: 1px solid #cc9900;
+  font-size: 12.5px;
+}
+
+table.callout td.calloutbody {
+  padding: 7px 9px;
+  background-color: #fffbee;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 hr {
   border: 0;
   border-top: 1px solid #9fb0cc;

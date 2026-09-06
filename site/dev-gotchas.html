@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gotchas &amp; Pitfalls - TempAR Developer Docs</title>
+<meta name="description" content="Every PSPSDK/GCC compatibility issue TempAR has hit, traced to root cause from git history, plus known lifecycle and global-state footguns.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext x='1' y='13' font-size='13' fill='%230f2148'%3E%E2%96%B3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<table class="layout" cellpadding="0" cellspacing="0">
+<tr><td class="banner">
+  <table cellpadding="0" cellspacing="0"><tr>
+    <td class="sitename">TempAR</td>
+    <td class="navlinks">
+      <a href="https://github.com/abduznik/tempar">GitHub</a> |
+      <a href="downloads.html">Downloads</a> |
+      <a href="https://github.com/abduznik/tempar/issues">Forums/Bugs</a>
+    </td>
+  </tr></table>
+  <span class="tagline">a CWCheat &amp; PSP Action Replay engine for the PSP</span>
+</td></tr>
+
+<tr><td class="ticker">
+  <marquee behavior="scroll" scrollamount="3">v1.70 is out now - CWCheat + PSPAR in one plugin - favorites &amp; persistence added - works on CFW only, not OFW - searcher up to 253x faster than the old MKUltra code - full changelog inside</marquee>
+</td></tr>
+
+<tr><td>
+<table cellpadding="0" cellspacing="0" style="width:100%;">
+<tr>
+
+<td class="navcol">
+  <div class="navhead">MAIN MENU</div>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="install.html">Install &amp; Hotkeys</a></li>
+    <li><a href="docs.html">Documentation</a></li>
+    <li><a href="downloads.html">Downloads</a></li>
+    <li><a href="changelog.html">Changelog</a></li>
+    <li><a href="develop.html" class="current">Developers</a></li>
+    <li><a href="credits.html">Credits</a></li>
+  </ul>
+  <div class="navhead">EXTERNAL</div>
+  <ul>
+    <li><a href="https://github.com/abduznik/tempar">GitHub Repo</a></li>
+    <li><a href="https://github.com/abduznik/tempar/releases">All Releases</a></li>
+    <li><a href="https://github.com/abduznik/tempar/issues">Report a Bug</a></li>
+  </ul>
+</td>
+
+<td class="maincol">
+
+  <div class="subnav">
+    <b>Dev Docs:</b>
+    <a href="develop.html">Overview</a> &middot;
+    <a href="dev-architecture.html">Architecture</a> &middot;
+    <a href="dev-build.html">Build</a> &middot;
+    <a href="dev-cheat-engine.html">Cheat Engine</a> &middot;
+    <a href="dev-menu-system.html">Menu System</a> &middot;
+    <a href="dev-disasm-search.html">Disasm/Search</a> &middot;
+    <a href="dev-sdk-usage.html">SDK Usage</a> &middot;
+    <b>Gotchas</b>
+  </div>
+
+  <table class="panel">
+    <tr><td class="panelhead">The SceLoadCoreExecFileInfo Saga</td></tr>
+    <tr><td class="panelbody">
+      <p>Worth knowing in detail &mdash; it took <b>six commits</b> to land properly and is a good example of the PSPSDK-version whack-a-mole this project deals with.</p>
+      <p><b>Root cause:</b> <tt>pspmodulemgr_kernel.h</tt> (pulled in transitively by pspkernel.h, needed by menu.c/screenshot.c/utils.c) references a type <tt>SceLoadCoreExecFileInfo</tt> that, in newer PSPSDK, is only defined in psploadcore.h &mdash; a header not everyone includes first.</p>
+      <p><b>Attempts before the fix stuck</b> (<tt>cbdb547</tt> &rarr; <tt>6a08954</tt> &rarr; <tt>6a284d7</tt> &rarr; <tt>375dd4b</tt> &rarr; <tt>ee19b37</tt> &rarr; <tt>fa55883</tt>): the first attempts scattered a local stub typedef directly at the top of individual .c files &mdash; copy-pasted per file, worded slightly differently each time, sometimes a forward declaration, sometimes a stub struct, at one point flip-flopping on whether to include psploadcore.h directly instead.</p>
+      <p><b>Final, correct fix</b> (<tt>fa55883</tt>): a single shared header, <tt>src/include/psp_compat.h</tt>:</p>
+<pre class="code">/*
+ * Compatibility shim for newer PSPSDK versions.
+ * pspmodulemgr_kernel.h references SceLoadCoreExecFileInfo on line 51,
+ * but the Docker image's SDK does not define it in any header that's
+ * included before use. Include this header BEFORE any PSPSDK kernel headers.
+ */
+typedef struct { int _dummy; } SceLoadCoreExecFileInfo;</pre>
+      <table class="callout">
+        <tr><td class="callouthead">Lesson</td></tr>
+        <tr><td class="calloutbody">
+          If you hit a "PSPSDK header references an undefined type" error again, <b>don't
+          re-invent a local stub in the .c file with the error</b> &mdash; check psp_compat.h
+          first, and if the fix belongs there, add it there once rather than scattering copies.
+          This is exactly the mistake the project made (and fixed) before landing on the
+          shared-header approach.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Other Compat-Fix Commits</td></tr>
+    <tr><td class="panelbody">
+      <table class="data">
+        <tr><th>Commit</th><th>What broke</th><th>Fix</th></tr>
+        <tr><td><tt>93093a7</tt></td><td>float.h used u32 without pulling in the header that defines it</td><td>Added <tt>#include &lt;pspkerneltypes.h&gt;</tt> directly</td></tr>
+        <tr class="alt"><td><tt>9162de8</tt></td><td>CI referenced wrong Docker image name / stale RELVER</td><td>Corrected image name and RELVER</td></tr>
+        <tr><td><tt>a06066e</tt></td><td>Newer SDK started providing its own sceKernelGetGameInfo declaration, conflicting with TempAR's; button_callback signature mismatch</td><td>Removed TempAR's own declaration; changed params to u32</td></tr>
+        <tr class="alt"><td><tt>4594821</tt></td><td>cheat_insert had an incompatible-pointer-type assignment</td><td>Replaced with explicit memcpy</td></tr>
+        <tr><td><tt>b3e25d1</tt></td><td>f_cvt had u32 vs unsigned int mismatches across 3 files</td><td>Aligned types across all call sites</td></tr>
+        <tr class="alt"><td><tt>eaf4897</tt></td><td>sceKernelGetThreadmanIdList array-pointer warning + unused variable</td><td>Fixed array-pointer usage, removed unused variable</td></tr>
+        <tr><td><tt>15f2570</tt></td><td>f_cvt call site passed u32[] to a differently-typed pointer</td><td>Explicit cast to u32*</td></tr>
+        <tr class="alt"><td><tt>14fcb6f</tt></td><td>sceImposeHomeButton/scePowerGetResumeCount removed from newer PSPSDK headers (still runtime-linkable)</td><td><tt>-Wno-implicit-function-declaration</tt> &mdash; permanent, load-bearing flag</td></tr>
+        <tr><td><tt>5376dc4</tt></td><td>GCC 14 tightened implicit int-to-pointer/pointer-type/int conversions</td><td><tt>-Wno-incompatible-pointer-types -Wno-int-conversion -Wno-int-to-pointer-cast</tt></td></tr>
+        <tr class="alt"><td><tt>b7d5215</tt></td><td>atoi not linked into kernel-mode libc build (link-time failure, easy to misdiagnose)</td><td>Replaced with strtoul</td></tr>
+      </table>
+      <table class="callout">
+        <tr><td class="callouthead">Working theory for future compat breaks</td></tr>
+        <tr><td class="calloutbody">
+          If a Docker image update breaks the build, look for: (1) a PSPSDK header now requiring a
+          type/include it didn't before &mdash; extend psp_compat.h, don't scatter local stubs;
+          (2) a function removed from headers but still runtime-linkable &mdash;
+          <tt>-Wno-implicit-function-declaration</tt> (already set) or an imports.S stub if linking
+          also fails; (3) GCC being stricter about a type mismatch that's always technically been
+          there &mdash; narrow, targeted <tt>-Wno-*</tt>, or actually fix the type.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Global State &amp; Lifecycle Traps</td></tr>
+    <tr><td class="panelbody">
+      <ul>
+        <li><b>No RAII / manual cleanup only.</b> menu_show()'s setup must be torn down in exact reverse order on every exit path. See <a href="dev-menu-system.html">Menu System</a>.</li>
+        <li><b>No config migration.</b> Changing Config's field set without bumping CONFIG_VER causes old config files to be misread rather than cleanly rejected.</li>
+        <li><b>No dirty-tracking/autosave.</b> Any new persistent per-cheat state needs an explicit cheat_save() call at the point it's mutated &mdash; this was an actual shipped bug (favorites, fixed in 8080309).</li>
+        <li><b>ctrl_read() force-sets CIRCLE when the menu is closed.</b> Any code reading raw controller state outside a menu-visible context will always see CIRCLE held.</li>
+        <li><b>Static OBJS lists.</b> Adding a new .c file requires manually adding its .o to every relevant makefile &mdash; there's no glob.</li>
+        <li><b>printf/puts are macros</b>, not the libc functions, in any file that includes menu.h or disasm.h &mdash; they draw to the debug-screen framebuffer at the current cursor position, not to any log/stdout.</li>
+        <li><b>MENU_KEY is a hidden bitmask.</b> get_menu_ctrl()'s inline #define MENU_KEY silently excludes any button not already listed there.</li>
+        <li><b>Double hotkey registration.</b> sceCtrlRegisterButtonCallback is called at boot and re-called in three places when keys are rebound. A fourth rebinding UI needs a fourth re-registration.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Vendored Code</td></tr>
+    <tr><td class="panelbody">
+      <p>Two files are vendored from other open-source PSP homebrew projects and carry their own license headers/conventions &mdash; treat changes to these more conservatively:</p>
+      <ul>
+        <li><tt>disasm.c</tt>/<tt>disasm.h</tt> &mdash; from PSPLINK (2006, BSD), MIPS disassembler.</li>
+        <li><tt>pspdebugkb.c</tt>/<tt>pspdebugkb.h</tt> &mdash; PSPSDK's own on-screen-keyboard sample utility.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Versioning Is Manual and Duplicated</td></tr>
+    <tr><td class="panelbody">
+      <p>
+        The release version number exists in at least two places that must be kept in sync by
+        hand: <tt>RELVER</tt> in the root makefile, and <tt>VER_MAIN</tt>/<tt>VER_SUB</tt> (and
+        <tt>VER_STR</tt>) in <tt>src/include/version.h</tt>. There is no single source of truth and
+        no build-time check that they match &mdash; a release with mismatched values will build
+        fine and just show the wrong version string somewhere.
+      </p>
+    </td></tr>
+  </table>
+
+</td>
+</tr>
+</table>
+</td></tr>
+
+<tr><td class="footer">
+  TempAR &copy; abduznik &middot; <a href="https://github.com/abduznik/tempar/blob/master/docs/LICENSE">license</a> &middot; not affiliated with Sony Interactive Entertainment &middot; <a href="https://github.com/abduznik/tempar">source on GitHub</a>
+</td></tr>
+
+</table>
+
+</body>
+</html>

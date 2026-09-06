@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PSP SDK Usage - TempAR Developer Docs</title>
+<meta name="description" content="TempAR's PSP SDK usage: module_start/stop lifecycle, support modules, exports.exp and imports.S, and the Docker toolchain.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext x='1' y='13' font-size='13' fill='%230f2148'%3E%E2%96%B3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<table class="layout" cellpadding="0" cellspacing="0">
+<tr><td class="banner">
+  <table cellpadding="0" cellspacing="0"><tr>
+    <td class="sitename">TempAR</td>
+    <td class="navlinks">
+      <a href="https://github.com/abduznik/tempar">GitHub</a> |
+      <a href="downloads.html">Downloads</a> |
+      <a href="https://github.com/abduznik/tempar/issues">Forums/Bugs</a>
+    </td>
+  </tr></table>
+  <span class="tagline">a CWCheat &amp; PSP Action Replay engine for the PSP</span>
+</td></tr>
+
+<tr><td class="ticker">
+  <marquee behavior="scroll" scrollamount="3">v1.70 is out now - CWCheat + PSPAR in one plugin - favorites &amp; persistence added - works on CFW only, not OFW - searcher up to 253x faster than the old MKUltra code - full changelog inside</marquee>
+</td></tr>
+
+<tr><td>
+<table cellpadding="0" cellspacing="0" style="width:100%;">
+<tr>
+
+<td class="navcol">
+  <div class="navhead">MAIN MENU</div>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="install.html">Install &amp; Hotkeys</a></li>
+    <li><a href="docs.html">Documentation</a></li>
+    <li><a href="downloads.html">Downloads</a></li>
+    <li><a href="changelog.html">Changelog</a></li>
+    <li><a href="develop.html" class="current">Developers</a></li>
+    <li><a href="credits.html">Credits</a></li>
+  </ul>
+  <div class="navhead">EXTERNAL</div>
+  <ul>
+    <li><a href="https://github.com/abduznik/tempar">GitHub Repo</a></li>
+    <li><a href="https://github.com/abduznik/tempar/releases">All Releases</a></li>
+    <li><a href="https://github.com/abduznik/tempar/issues">Report a Bug</a></li>
+  </ul>
+</td>
+
+<td class="maincol">
+
+  <div class="subnav">
+    <b>Dev Docs:</b>
+    <a href="develop.html">Overview</a> &middot;
+    <a href="dev-architecture.html">Architecture</a> &middot;
+    <a href="dev-build.html">Build</a> &middot;
+    <a href="dev-cheat-engine.html">Cheat Engine</a> &middot;
+    <a href="dev-menu-system.html">Menu System</a> &middot;
+    <a href="dev-disasm-search.html">Disasm/Search</a> &middot;
+    <b>SDK Usage</b> &middot;
+    <a href="dev-gotchas.html">Gotchas</a>
+  </div>
+
+  <table class="panel">
+    <tr><td class="panelhead">Module Lifecycle: module_start / module_stop</td></tr>
+    <tr><td class="panelbody">
+      <p>
+        Every PSP kernel module (PRX) needs two exported entry points, declared via
+        PSP_MODULE_INFO/PSP_MAIN_THREAD_ATTR macros and listed in exports.exp. TempAR's are in
+        main.c:
+      </p>
+      <p><b>module_start(argc, argv)</b> &mdash; called once when the plugin loader loads the PRX. TempAR does the minimum here and defers everything else to a worker thread:</p>
+      <ol>
+        <li>Parses argv[0] (its own load path) to extract the plugin's directory and drive by hand-scanning for <tt>/</tt> characters &mdash; no path-splitting helper in the kernel libc.</li>
+        <li>Records the boot game's path via <tt>sceKernelInitFileName()</tt>.</li>
+        <li>Snapshots the current thread list into <tt>thread_buf_start</tt> &mdash; this baseline is what <tt>gamePause()</tt>/<tt>gameResume()</tt> later diff against to know which threads belong to the game vs. threads that existed before TempAR loaded.</li>
+        <li>Creates and starts "TempAR_thread" running <tt>main_thread()</tt>, then returns.</li>
+      </ol>
+      <table class="callout">
+        <tr><td class="callouthead">Why defer to a thread?</td></tr>
+        <tr><td class="calloutbody">
+          module_start runs very early in boot, before other system modules the plugin depends on
+          (sceKernelLibrary in particular) have necessarily finished loading.
+          <tt>main_thread()</tt>'s first act is a polling wait:
+<pre class="code">while(!sceKernelFindModuleByName("sceKernelLibrary")) {
+    sceKernelDelayThread(1000000);
+}</pre>
+          Returning from module_start quickly and doing real init later, on a separate thread, is
+          the standard PSP plugin pattern for this reason.
+        </td></tr>
+      </table>
+      <p>
+        <b>module_stop(argc, argv)</b> &mdash; called on unload. Sets <tt>running = 0</tt> and
+        <tt>menu.visible = 0</tt>, waits up to 100ms for the worker thread to exit cleanly, and
+        force-terminates it if it doesn't. Then frees cheat memory, language memory, the
+        text-viewer buffer, and disconnects USB. <b>If you add a new subsystem with its own
+        allocated memory or open handle, add its teardown here</b> &mdash; there's no automatic
+        resource tracking.
+      </p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">The Main Loop</td></tr>
+    <tr><td class="panelbody">
+<pre class="code">while(running) {
+    if(menu.visible)            menu_show();       // blocking, returns when user closes menu
+    else if(cfg.cheat_hz != 0)  cheat_apply(0);     // apply all enabled cheats once
+    // screenshot handling...
+    sceKernelDelayThread(cfg.cheat_hz ? cfg.cheat_hz : 15000);
+}</pre>
+      <p><tt>cfg.cheat_hz</tt> is a user-configurable delay (in microseconds) between cheat-apply passes &mdash; lower means cheats reapply more often at the cost of more CPU time stolen from the game.</p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Support Modules: What Each One Wraps</td></tr>
+    <tr><td class="panelbody">
+      <table class="data">
+        <tr><th>Module</th><th>Wraps / solves</th></tr>
+        <tr><td><tt>kmalloc.c</tt></td><td><tt>sceKernelAllocPartitionMemory</tt> wrapped with alignment support and automatic partition selection (checks partitions 1 and 6 for enough free space). Stores its own SceUID just before the returned pointer so kfree() can look it up without the caller tracking it.</td></tr>
+        <tr class="alt"><td><tt>syslibc.c</tt></td><td>Fills gaps in the kernel-mode libc (USE_KERNEL_LIBC=1 pulls in a smaller libc). Implements vsnprintf/snprintf on top of PSPSDK's internal formatter, plus strcasecmp.</td></tr>
+        <tr><td><tt>log.c</tt></td><td>A minimal file-based debug logger, entirely compiled out unless _DEBUG_ is defined (not set in any current makefile &mdash; opt-in only).</td></tr>
+        <tr class="alt"><td><tt>usb.c</tt></td><td>Toggles USB mass-storage mode so a PC can read the memory stick without rebooting. Gated by _USB_, full build only.</td></tr>
+        <tr><td><tt>screenshot.c</tt></td><td>Captures the framebuffer to a file on the screenshot hotkey. Gated by _SCREENSHOT_.</td></tr>
+        <tr class="alt"><td><tt>float.c</tt></td><td>Float/fixed-point conversion helpers used by PSPAR-extended code types that operate on floating-point values.</td></tr>
+        <tr><td><tt>sdk.c</tt></td><td>The public API surface exposed to other PRX plugins via exports.exp's cwcheat group.</td></tr>
+        <tr class="alt"><td><tt>psid.c</tt></td><td>Deliberately corrupts the OpenPSID for network anti-cheat evasion, gated by _PSID_, non-POPS titles only.</td></tr>
+      </table>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">exports.exp and imports.S</td></tr>
+    <tr><td class="panelbody">
+      <p><b>exports.exp</b> declares what this PRX exposes to the outside world. Two export groups:</p>
+<pre class="code">PSP_EXPORT_START(syslib, 0, 0x8000)
+    PSP_EXPORT_FUNC_HASH(module_start)
+    PSP_EXPORT_FUNC_HASH(module_stop)
+    PSP_EXPORT_VAR_HASH(module_info)
+PSP_EXPORT_END
+
+PSP_EXPORT_START(cwcheat, 0, 0x0001)
+    PSP_EXPORT_FUNC_HASH(add_codeline_pspcheat_prx)
+    PSP_EXPORT_FUNC_HASH(add_cheat_pspcheat_prx)
+    PSP_EXPORT_FUNC_HASH(read_config)
+    PSP_EXPORT_FUNC_HASH(config_saver)
+    PSP_EXPORT_FUNC_HASH(setcodes)
+    PSP_EXPORT_FUNC_HASH(readdb)
+PSP_EXPORT_END</pre>
+      <ul>
+        <li><b>syslib</b> (mandatory for every PRX): module_start, module_stop, module_info.</li>
+        <li><b>cwcheat</b>: TempAR's own small public API, all implemented in sdk.c. Exists so a separate PRX (a game-specific trainer plugin) can add cheats or trigger a cheat-apply pass against TempAR's already-running instance. <b>Treat this list as a public API, not an internal one</b> &mdash; renaming or changing a signature breaks binary compatibility for any third-party plugin built against it.</li>
+      </ul>
+      <p>
+        <b>imports.S</b> is hand-written MIPS assembly declaring stub imports &mdash; functions
+        TempAR calls that live in system modules (SysMemForKernel, sceImpose_driver, sceUsb,
+        sceUsbstorBoot, sceRtc, sceUtility, sceOpenPSID_driver) but aren't exposed through PSPSDK's
+        normal header+import-library pairing, usually because they're kernel-only, undocumented, or
+        from an SDK version too old/new to have a matching stub already generated. If a future
+        PSPSDK version starts providing a proper stub for one of these, the hand-written one becomes
+        a duplicate symbol and must be removed.
+      </p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Docker as the Toolchain</td></tr>
+    <tr><td class="panelbody">
+      <p>
+        TempAR doesn't assume a locally-installed PSPSDK. Every build runs inside a container image
+        (pspdev/pspsdk or pspdev/pspdev) that bundles the full MIPS cross-compiler + PSPSDK
+        pre-built. <b>The toolchain version is whatever the Docker image tag currently resolves
+        to</b> &mdash; no version pin in this repo. When the image updates upstream, the build can
+        break without any change to this repository's own code. Every compat-fix commit on the
+        <a href="dev-gotchas.html">Gotchas</a> page was triggered exactly this way.
+      </p>
+    </td></tr>
+  </table>
+
+</td>
+</tr>
+</table>
+</td></tr>
+
+<tr><td class="footer">
+  TempAR &copy; abduznik &middot; <a href="https://github.com/abduznik/tempar/blob/master/docs/LICENSE">license</a> &middot; not affiliated with Sony Interactive Entertainment &middot; <a href="https://github.com/abduznik/tempar">source on GitHub</a>
+</td></tr>
+
+</table>
+
+</body>
+</html>
