@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TempAR - PSP Cheat Engine Plugin (CWCheat &amp; PSPAR)</title>
+<meta name="description" content="TempAR is a free cheat engine plugin for the PlayStation Portable, supporting CWCheat and PSP Action Replay code types, with a built-in memory search, MIPS disassembler, and memory browser.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext x='1' y='13' font-size='13' fill='%231a3a6a'%3E%E2%96%B3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<table class="layout" cellpadding="0" cellspacing="0">
+<tr><td class="banner">
+  <table cellpadding="0" cellspacing="0"><tr>
+    <td class="sitename">TempAR</td>
+    <td class="navlinks">
+      <a href="https://github.com/abduznik/tempar">GitHub</a> |
+      <a href="downloads.html">Downloads</a> |
+      <a href="https://github.com/abduznik/tempar/issues">Forums/Bugs</a>
+    </td>
+  </tr></table>
+  <span class="tagline">a CWCheat &amp; PSP Action Replay engine for the PSP</span>
+</td></tr>
+
+<tr><td class="ticker">
+  <marquee behavior="scroll" scrollamount="3">v1.70 is out now - CWCheat + PSPAR in one plugin - favorites &amp; persistence added - works on CFW only, not OFW - searcher up to 253x faster than the old MKUltra code - full changelog inside</marquee>
+</td></tr>
+
+<tr><td>
+<table cellpadding="0" cellspacing="0" style="width:100%;">
+<tr>
+
+<td class="navcol">
+  <div class="navhead">MAIN MENU</div>
+  <ul>
+    <li><a href="index.html" class="current">Home</a></li>
+    <li><a href="install.html">Install &amp; Hotkeys</a></li>
+    <li><a href="docs.html">Documentation</a></li>
+    <li><a href="downloads.html">Downloads</a></li>
+    <li><a href="changelog.html">Changelog</a></li>
+    <li><a href="develop.html">Developers</a></li>
+    <li><a href="credits.html">Credits</a></li>
+  </ul>
+  <div class="navhead">EXTERNAL</div>
+  <ul>
+    <li><a href="https://github.com/abduznik/tempar">GitHub Repo</a></li>
+    <li><a href="https://github.com/abduznik/tempar/releases">All Releases</a></li>
+    <li><a href="https://github.com/abduznik/tempar/issues">Report a Bug</a></li>
+  </ul>
+</td>
+
+<td class="maincol">
+
+  <table class="panel">
+    <tr><td class="panelhead">Welcome to TempAR <span class="newflag">[v1.70 released]</span></td></tr>
+    <tr><td class="panelbody">
+      <p>
+        <b>TempAR</b> is a cheat engine plugin for the PlayStation Portable, supporting both
+        <b>CWCheat</b> and <b>PSP Action Replay (PSPAR)</b> code types in a single plugin.
+        It runs on custom firmware (CFW) as a kernel-mode plugin, with an in-game menu, a
+        live memory search, a MIPS disassembler, and a memory browser &mdash; everything you
+        need to use <i>and</i> create PSP cheat codes.
+      </p>
+      <p>
+        Get started: <a href="downloads.html">download the latest release</a> &middot;
+        <a href="install.html">installation &amp; hotkeys</a> &middot;
+        <a href="docs.html">full documentation</a>
+      </p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Project Stats</td></tr>
+    <tr><td class="panelbody">
+      <table class="stats">
+        <tr>
+          <td><span class="statnum">1.70</span><span class="statlabel">Current Version</span></td>
+          <td><span class="statnum">~11,800</span><span class="statlabel">Lines of C</span></td>
+          <td><span class="statnum">21</span><span class="statlabel">Source Modules</span></td>
+          <td><span class="statnum">2</span><span class="statlabel">Cheat Engines</span></td>
+          <td><span class="statnum">2017</span><span class="statlabel">Project Started</span></td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Features</td></tr>
+    <tr><td class="panelbody">
+      <table class="features">
+        <tr>
+          <td><b>Dual Cheat Engine</b> &mdash; CWCheat and PSP Action Replay (PSPAR + Extended) codes, loaded from the same database.</td>
+          <td><b>PSX GameShark Support</b> &mdash; compatibility with PS1-on-PSP (POPS) titles via a dedicated lite build.</td>
+        </tr>
+        <tr>
+          <td><b>Memory Search</b> &mdash; 8/16/32-bit exact &amp; unknown value search; add results as new cheats instantly.</td>
+          <td><b>MIPS Disassembler</b> &mdash; inspect and patch live game memory on-device with a built-in browser/decoder.</td>
+        </tr>
+        <tr>
+          <td><b>NitePR / PSPAR.com Compatible</b> &mdash; load existing NitePR .txt and PSPAR.com .bin cheat files, no conversion needed.</td>
+          <td><b>Skinnable &amp; Multi-language</b> &mdash; customize UI colors, pick from several translated language packs.</td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Quick Start</td></tr>
+    <tr><td class="panelbody">
+      <ol>
+        <li>Grab the latest release from the <a href="downloads.html">downloads page</a>.</li>
+        <li>Copy the <tt>seplugins</tt> folder to your Memory Stick.</li>
+        <li>Press <kbd>R</kbd>+<kbd>HOME</kbd> in-game to open the cheat menu.</li>
+      </ol>
+      <p>Full steps, all hotkeys, and cheat file formats: see <a href="install.html">Install &amp; Hotkeys</a>.</p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Lineage</td></tr>
+    <tr><td class="panelbody">
+      <p>
+        TempAR is a heavily modified descendant of <b>MKUltra</b>, itself a modified
+        descendant of <b>NitePR</b> &mdash; carrying PSP cheat-device history forward from
+        the CWCheat/PSPAR era while adding features neither predecessor had: favorites,
+        extended PSPAR code types, PSX GameShark support, and a multi-language UI.
+        See the <a href="changelog.html">changelog</a> for the full version history.
+      </p>
+    </td></tr>
+  </table>
+
+</td>
+</tr>
+</table>
+</td></tr>
+
+<tr><td class="footer">
+  TempAR &copy; abduznik &middot; <a href="https://github.com/abduznik/tempar/blob/master/docs/LICENSE">license</a> &middot; not affiliated with Sony Interactive Entertainment &middot; <a href="https://github.com/abduznik/tempar">source on GitHub</a>
+</td></tr>
+
+</table>
+
+</body>
+</html>

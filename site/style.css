@@ -1,0 +1,272 @@
+/* TempAR site — genuine early-2000s forum/fansite styling.
+   Flat colors, hard 1px borders, tight spacing, no shadows,
+   no gradients, no rounded corners, no hero/CTA patterns. */
+
+body {
+  margin: 0;
+  padding: 8px;
+  background-color: #aab8cc;
+  color: #101010;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 13px;
+}
+
+a { color: #0000dd; }
+a:visited { color: #6a1fa0; }
+a:hover { color: #dd0000; }
+
+h1, h2, h3 {
+  font-family: Verdana, Arial, sans-serif;
+  margin: 0;
+}
+
+table.layout {
+  border: 1px solid #16294a;
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: #ffffff;
+}
+
+/* header banner */
+td.banner {
+  background-color: #0f2148;
+  border-bottom: 1px solid #071228;
+  padding: 6px 10px;
+  vertical-align: middle;
+}
+
+td.banner table { width: 100%; }
+
+td.banner .sitename {
+  font-family: "Trebuchet MS", Verdana, Arial, sans-serif;
+  font-size: 23px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+td.banner .tagline {
+  font-size: 12px;
+  color: #9ab4dc;
+}
+
+td.banner .navlinks {
+  text-align: right;
+  font-size: 12px;
+  color: #ffffff;
+}
+
+td.banner .navlinks a { color: #ffffff; }
+td.banner .navlinks a:hover { color: #ffcc00; }
+
+/* ticker bar */
+td.ticker {
+  background-color: #fff2b0;
+  border-bottom: 1px solid #16294a;
+  padding: 3px 10px;
+  color: #5a0000;
+  font-size: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+td.ticker marquee { width: 100%; }
+
+/* breadcrumb strip */
+td.crumbs {
+  background-color: #dde6f2;
+  border-bottom: 1px solid #9fb0cc;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #444444;
+}
+
+/* left nav column */
+td.navcol {
+  width: 145px;
+  vertical-align: top;
+  background-color: #dce4f1;
+  border-right: 1px solid #9fb0cc;
+  padding: 0;
+}
+
+td.navcol .navhead {
+  background-color: #16294a;
+  color: #ffffff;
+  font-weight: bold;
+  padding: 3px 7px;
+  font-size: 12px;
+}
+
+td.navcol ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+td.navcol li {
+  border-bottom: 1px solid #c3d0e5;
+}
+
+td.navcol a {
+  display: block;
+  padding: 4px 9px;
+  color: #0000dd;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+td.navcol a:hover {
+  background-color: #c3d3ec;
+  color: #dd0000;
+}
+
+td.navcol a.current {
+  background-color: #aec4e6;
+  font-weight: bold;
+  color: #000000;
+}
+
+/* main content column */
+td.maincol {
+  vertical-align: top;
+  background-color: #ffffff;
+  padding: 10px;
+}
+
+/* content panels: tight, flat, bordered */
+table.panel {
+  width: 100%;
+  border: 1px solid #9fb0cc;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+
+table.panel td.panelhead {
+  background-color: #cddaee;
+  color: #0f2148;
+  font-weight: bold;
+  padding: 4px 7px;
+  border-bottom: 1px solid #9fb0cc;
+  font-size: 13px;
+}
+
+table.panel td.panelbody {
+  padding: 8px 9px;
+  color: #101010;
+  line-height: 1.45;
+  font-size: 13px;
+}
+
+table.panel td.panelbody p { margin: 0 0 7px 0; }
+table.panel td.panelbody p:last-child { margin-bottom: 0; }
+
+table.panel td.panelbody ul, table.panel td.panelbody ol {
+  margin: 0 0 7px 0;
+  padding-left: 20px;
+}
+
+/* NEW tag, done as text, not a decorative badge */
+.newflag {
+  color: #dd0000;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+/* data / hotkey tables */
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #9fb0cc;
+  font-size: 13px;
+  margin-bottom: 7px;
+}
+
+table.data th {
+  background-color: #cddaee;
+  color: #0f2148;
+  border: 1px solid #9fb0cc;
+  padding: 3px 7px;
+  text-align: left;
+}
+
+table.data td {
+  border: 1px solid #9fb0cc;
+  padding: 3px 7px;
+}
+
+table.data tr.alt td { background-color: #eef2f8; }
+
+/* feature list: two-column bordered table, dense, no cards */
+table.features {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #9fb0cc;
+  font-size: 13px;
+}
+
+table.features td {
+  border: 1px solid #9fb0cc;
+  padding: 5px 7px;
+  vertical-align: top;
+  width: 50%;
+}
+
+table.features b { color: #0f2148; }
+
+/* stats panel: dense number/label grid, period-authentic "site stats" box */
+table.stats {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #9fb0cc;
+  font-size: 13px;
+}
+
+table.stats td {
+  border: 1px solid #9fb0cc;
+  padding: 6px 4px;
+  text-align: center;
+  width: 20%;
+}
+
+table.stats .statnum {
+  display: block;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 19px;
+  font-weight: bold;
+  color: #0f2148;
+}
+
+table.stats .statlabel {
+  display: block;
+  font-size: 10.5px;
+  color: #555555;
+  text-transform: uppercase;
+}
+
+kbd {
+  font-family: "Courier New", Courier, monospace;
+  background-color: #eeeeee;
+  border: 1px solid #999999;
+  padding: 0 4px;
+  font-size: 12px;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid #9fb0cc;
+  margin: 7px 0;
+}
+
+/* footer: plain text strip, no decorative badges/counters */
+td.footer {
+  text-align: center;
+  padding: 7px;
+  font-size: 11.5px;
+  color: #555555;
+  background-color: #dde6f2;
+  border-top: 1px solid #9fb0cc;
+}
+
+td.footer a { color: #26296a; }

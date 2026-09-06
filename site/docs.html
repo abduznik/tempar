@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Documentation - TempAR</title>
+<meta name="description" content="TempAR documentation: supported cheat code types, comparison to PSPAR/CWCheat/NitePR, skinning, searcher performance, and FAQ.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext x='1' y='13' font-size='13' fill='%230f2148'%3E%E2%96%B3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<table class="layout" cellpadding="0" cellspacing="0">
+<tr><td class="banner">
+  <table cellpadding="0" cellspacing="0"><tr>
+    <td class="sitename">TempAR</td>
+    <td class="navlinks">
+      <a href="https://github.com/abduznik/tempar">GitHub</a> |
+      <a href="downloads.html">Downloads</a> |
+      <a href="https://github.com/abduznik/tempar/issues">Forums/Bugs</a>
+    </td>
+  </tr></table>
+  <span class="tagline">a CWCheat &amp; PSP Action Replay engine for the PSP</span>
+</td></tr>
+
+<tr><td class="ticker">
+  <marquee behavior="scroll" scrollamount="3">v1.70 is out now - CWCheat + PSPAR in one plugin - favorites &amp; persistence added - works on CFW only, not OFW - searcher up to 253x faster than the old MKUltra code - full changelog inside</marquee>
+</td></tr>
+
+<tr><td>
+<table cellpadding="0" cellspacing="0" style="width:100%;">
+<tr>
+
+<td class="navcol">
+  <div class="navhead">MAIN MENU</div>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="install.html">Install &amp; Hotkeys</a></li>
+    <li><a href="docs.html" class="current">Documentation</a></li>
+    <li><a href="downloads.html">Downloads</a></li>
+    <li><a href="changelog.html">Changelog</a></li>
+    <li><a href="develop.html">Developers</a></li>
+    <li><a href="credits.html">Credits</a></li>
+  </ul>
+  <div class="navhead">EXTERNAL</div>
+  <ul>
+    <li><a href="https://github.com/abduznik/tempar">GitHub Repo</a></li>
+    <li><a href="https://github.com/abduznik/tempar/releases">All Releases</a></li>
+    <li><a href="https://github.com/abduznik/tempar/issues">Report a Bug</a></li>
+  </ul>
+</td>
+
+<td class="maincol">
+
+  <table class="panel">
+    <tr><td class="panelhead">Code Types</td></tr>
+    <tr><td class="panelbody">
+      <p>TempAR cheat files use one of three code type systems. A single code can only use one system &mdash; the prefix of the last line in the code determines which cheat engine handles it.</p>
+      <ul>
+        <li><a href="https://github.com/raing3/psp-cheat-documentation/blob/master/cheat-devices/cwcheat.md">CWCheat</a></li>
+        <li><a href="https://github.com/raing3/psp-cheat-documentation/blob/master/cheat-devices/pspar.md">PSP Action Replay (PSPAR)</a></li>
+        <li><a href="https://github.com/raing3/psp-cheat-documentation/blob/master/cheat-devices/tempar.md">TempAR (PSPAR Extended)</a></li>
+        <li><a href="https://github.com/raing3/psp-cheat-documentation/blob/master/other/button-activators.md">Button activators</a></li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Comparison to Other Cheat Engines</td></tr>
+    <tr><td class="panelbody">
+      <p><b>PSP Action Replay</b></p>
+      <ul>
+        <li>Does not work on OFW &mdash; requires CFW (which the official PSPAR does not need, but also cannot use).</li>
+        <li>Uses a CWCheat-style text file for code entry instead of a complex binary file.</li>
+        <li>Fake addresses were added for reading the pad state, so codes port more easily from devices like CWCheat.</li>
+      </ul>
+      <p><b>NitePR / MKUltra (and similar)</b></p>
+      <ul>
+        <li>Codes load from a single CWCheat-style file instead of one text file per game &mdash; faster updates, far less Memory Stick space (over 20MB in some cases, back when that mattered).</li>
+        <li>Real addresses are used by default for the decoder and browser, matching PSPAR's addressing.</li>
+        <li>NitePR code type support was removed; existing NitePR files still load but are converted to PSPAR format.</li>
+        <li>SOCOM-specific functionality was removed.</li>
+      </ul>
+      <p><b>CWCheat</b></p>
+      <ul>
+        <li>A new <tt>_C2</tt> line type was added &mdash; codes with this prefix stay active regardless of whether the cheat engine is globally enabled.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Skinning</td></tr>
+    <tr><td class="panelbody">
+      <p>Most UI colors can be customized by creating a file in the <tt>colors</tt> folder, similar to the ones already included. Each line represents a different color:</p>
+      <table class="data">
+        <tr><th>Line</th><th>Meaning</th></tr>
+        <tr><td><tt>0xFF442F18</tt></td><td>Background color</td></tr>
+        <tr class="alt"><td><tt>0xFFFFFFFF</tt></td><td>Line color</td></tr>
+        <tr><td><tt>0xFF0072FF</tt></td><td>Selected color</td></tr>
+        <tr class="alt"><td><tt>0x00000202</tt></td><td>Selected color fade amount</td></tr>
+        <tr><td><tt>0xFFFFFFFF</tt></td><td>Non-selector color</td></tr>
+        <tr class="alt"><td><tt>0x00020202</tt></td><td>Non-selected color fade amount</td></tr>
+        <tr><td><tt>0xFF0072FF</tt></td><td>Selected menu color</td></tr>
+        <tr class="alt"><td><tt>0xFFFFFFFF</tt></td><td>Non-selected menu color</td></tr>
+        <tr><td><tt>0xFF0072FF</tt></td><td>Off cheat color</td></tr>
+        <tr class="alt"><td><tt>0xFFFF0000</tt></td><td>Always-on cheat color</td></tr>
+        <tr><td><tt>0xFF00FF00</tt></td><td>Normal-on cheat color</td></tr>
+        <tr class="alt"><td><tt>0xFF21FF00</tt></td><td>Multi-select folder color</td></tr>
+        <tr><td><tt>0xFF21FF00</tt></td><td>Single-select folder color</td></tr>
+        <tr class="alt"><td><tt>0xFFFFFF00</tt></td><td>Comment / empty code color</td></tr>
+      </table>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Searcher Performance</td></tr>
+    <tr><td class="panelbody">
+      <p>The searcher supports 8-bit, 16-bit and 32-bit exact and unknown searches, text searches, and user-defined search ranges. It was substantially rewritten from the old MKUltra implementation. Benchmark below: God of War: Ghost of Sparta, main menu, 5.50 GEN-D3.</p>
+      <table class="data">
+        <tr><th>Search Type</th><th>Old Searcher</th><th>New Searcher</th><th>Difference</th></tr>
+        <tr><td>32-bit exact (0x00000000)</td><td>1:10 for 5%, ~23:20 for 100%</td><td>0:54 for 100%</td><td>25x faster</td></tr>
+        <tr class="alt"><td>Continue 32-bit exact (0x00000001)</td><td>Skipped</td><td>0:17 for 100%</td><td>Skipped</td></tr>
+        <tr><td>8-bit exact (0x01)</td><td>2:20 for 5%, ~46:30 for 100%</td><td>0:11 for 100%</td><td>253x faster</td></tr>
+        <tr class="alt"><td>Continue 8-bit exact (0x01)</td><td>Skipped</td><td>0:08 for 100%</td><td>Skipped</td></tr>
+        <tr><td>32-bit unknown</td><td>0:06 for 100%</td><td>0:06 for 100%</td><td>Same</td></tr>
+        <tr class="alt"><td>Continue 32-bit unknown (different)</td><td>5:00 for 20%, 20:00+ for 100%</td><td>0:13 for 100%</td><td>92x faster</td></tr>
+        <tr><td>Continue 32-bit unknown (different)</td><td>Skipped</td><td>0:01 for 100%</td><td>Skipped</td></tr>
+        <tr class="alt"><td>8-bit unknown</td><td>0:06 for 100%</td><td>0:06 for 100%</td><td>Same</td></tr>
+        <tr><td>8-bit unknown (different)</td><td>5:00 for 20%, 20:00+ for 100%</td><td>0:22 for 100%</td><td>54x faster</td></tr>
+        <tr class="alt"><td>8-bit unknown (different)</td><td>Skipped</td><td>0:02 for 100%</td><td>Same</td></tr>
+      </table>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">FAQ</td></tr>
+    <tr><td class="panelbody">
+      <p><b>Q: Can I use both CWCheat and PSPAR code types in a single code?</b><br>
+      A: No. The cheat engine supports only one system per code (CWCheat, PSPAR, or PSPAR Extended). The prefix of the code's last line determines which one is used.</p>
+      <p><b>Q: Can I use the <tt>pspar_codes1.bin</tt> file from the PSPAR website with TempAR?</b><br>
+      A: Yes &mdash; copy the file to the same directory as the TempAR plugin and it will be loaded automatically.</p>
+      <p><b>Q: Can I use my NitePR codes with TempAR?</b><br>
+      A: Yes. If cheats for a game can't be loaded from the CWCheat/PSPAR code file, TempAR looks for a NitePR cheat file in <tt>[tempar directory]/cheats/[game id].txt</tt> and <tt>ms0:/seplugins/nitePR/[game id].txt</tt>, converting it to PSPAR format on load.</p>
+      <p><b>Q: Can I use my CWCheat POPS codes with TempAR?</b><br>
+      A: Yes &mdash; load the <tt>tempar_lite.prx</tt> file to use TempAR with PS1 games.</p>
+    </td></tr>
+  </table>
+
+</td>
+</tr>
+</table>
+</td></tr>
+
+<tr><td class="footer">
+  TempAR &copy; abduznik &middot; <a href="https://github.com/abduznik/tempar/blob/master/docs/LICENSE">license</a> &middot; not affiliated with Sony Interactive Entertainment &middot; <a href="https://github.com/abduznik/tempar">source on GitHub</a>
+</td></tr>
+
+</table>
+
+</body>
+</html>

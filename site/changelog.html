@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Changelog - TempAR</title>
+<meta name="description" content="Full version history of TempAR, the PSP CWCheat and PSP Action Replay cheat engine plugin.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext x='1' y='13' font-size='13' fill='%230f2148'%3E%E2%96%B3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<table class="layout" cellpadding="0" cellspacing="0">
+<tr><td class="banner">
+  <table cellpadding="0" cellspacing="0"><tr>
+    <td class="sitename">TempAR</td>
+    <td class="navlinks">
+      <a href="https://github.com/abduznik/tempar">GitHub</a> |
+      <a href="downloads.html">Downloads</a> |
+      <a href="https://github.com/abduznik/tempar/issues">Forums/Bugs</a>
+    </td>
+  </tr></table>
+  <span class="tagline">a CWCheat &amp; PSP Action Replay engine for the PSP</span>
+</td></tr>
+
+<tr><td class="ticker">
+  <marquee behavior="scroll" scrollamount="3">v1.70 is out now - CWCheat + PSPAR in one plugin - favorites &amp; persistence added - works on CFW only, not OFW - searcher up to 253x faster than the old MKUltra code - full changelog inside</marquee>
+</td></tr>
+
+<tr><td>
+<table cellpadding="0" cellspacing="0" style="width:100%;">
+<tr>
+
+<td class="navcol">
+  <div class="navhead">MAIN MENU</div>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="install.html">Install &amp; Hotkeys</a></li>
+    <li><a href="docs.html">Documentation</a></li>
+    <li><a href="downloads.html">Downloads</a></li>
+    <li><a href="changelog.html" class="current">Changelog</a></li>
+    <li><a href="develop.html">Developers</a></li>
+    <li><a href="credits.html">Credits</a></li>
+  </ul>
+  <div class="navhead">EXTERNAL</div>
+  <ul>
+    <li><a href="https://github.com/abduznik/tempar">GitHub Repo</a></li>
+    <li><a href="https://github.com/abduznik/tempar/releases">All Releases</a></li>
+    <li><a href="https://github.com/abduznik/tempar/issues">Report a Bug</a></li>
+  </ul>
+</td>
+
+<td class="maincol">
+
+  <table class="panel">
+    <tr><td class="panelhead">1.6.4 <span style="font-weight:normal;">(2022-10-03)</span></td></tr>
+    <tr><td class="panelbody">
+      <p><b>Fixed:</b></p>
+      <ul>
+        <li>Fixed issue with button presses not functioning on credits tab (thanks to mgood7123).</li>
+      </ul>
+      <p><b>Changed:</b></p>
+      <ul>
+        <li>Fixed compilation errors (and many warnings) with the latest version of pspsdk.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">1.63 <span style="font-weight:normal;">(not officially released)</span></td></tr>
+    <tr><td class="panelbody">
+      <p><b>Added/Improved:</b></p>
+      <ul>
+        <li>Added support for PSX GameShark codes.</li>
+        <li>Added support for loading codes from PSPAR .bin files (checksum not validated).</li>
+        <li>Added support for loading codes from NitePR .txt files (converted to PSPAR on load).</li>
+        <li>User can now change the maximum number of cheats/code lines which can be loaded.</li>
+        <li>Added new code types: 0xC1 (call function with arguments), 0xC2 (run code from cheat list), 0xC4 (safe data store), 0xC5 (counter).</li>
+        <li>Can add search results in CWCheat format by pressing SQUARE on the search result.</li>
+        <li>Added HB blacklist file to disable HB Game ID generation in certain games (useful for shells such as Xplora, Prometheus ISO Launcher, etc).</li>
+        <li>Added PSP Utilities application with various cheat helper functionality (requires Java).</li>
+        <li>Added option to swap functionality of CROSS and CIRCLE buttons in the TempAR menu.</li>
+        <li>Added multi-lingual support for the interface (Japanese by HARO, Portuguese-BR by Hiei-YYH, French by Rahim-US).</li>
+        <li>Added support for sub-folders using the 0xCF code type.</li>
+        <li>Added support for inserting cheats anywhere in the cheat list; L/R trigger changes the number of lines a cheat has.</li>
+      </ul>
+      <p><b>Removed:</b></p>
+      <ul>
+        <li>Removed thread list and module list from lite version to reduce size.</li>
+        <li>Removed copy to text file from disassembler.</li>
+        <li>Removed old PC tools since their functionality is now integrated into TempAR.</li>
+      </ul>
+      <p><b>Fixed:</b></p>
+      <ul>
+        <li>Fixes to the conditional code types and 0xD0 code type (thanks to HARO).</li>
+      </ul>
+      <p><b>Changed:</b></p>
+      <ul>
+        <li>Temporary data buffers are only allocated when needed to reduce memory usage.</li>
+        <li>Rewrote the cheat.db parser to be ~1/3 faster (62s &rarr; 42s on a 58.9MB database).</li>
+        <li>Removed the separate auto-off build; auto-off is now merged into both PRX builds (enable via "Enable Autooff" under [PRX]).</li>
+        <li>Pressing LTRIGGER in the cheat menu now toggles the cheat engine between active/inactive.</li>
+        <li>Rewrote the function used to get the home screen frame buffer.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">1.62 <span style="font-weight:normal;">(2011-04-28)</span></td></tr>
+    <tr><td class="panelbody">
+      <p><b>Added/Improved:</b></p>
+      <ul>
+        <li>Changed default menu key to HOME + RTRIGGER (matching the official PSPAR).</li>
+        <li>No longer need to press HOME twice to start using TempAR.</li>
+      </ul>
+      <p><b>Fixed:</b></p>
+      <ul>
+        <li>Fixed an off-by-one error toggling cheats in a radio folder.</li>
+        <li>Fixed a bug with the CWCheat multi-write pointer code type.</li>
+        <li>Fixed codes not disabling correctly with tempar_autooff.prx.</li>
+        <li>Fixed single-character Japanese text not loading correctly.</li>
+        <li>Fixed blue screen on resume if the menu was open when the PSP went into standby on 6.20+.</li>
+      </ul>
+      <p><b>Changed:</b></p>
+      <ul>
+        <li>tempar_autooff.prx is now based on tempar_lite.prx.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">1.61 <span style="font-weight:normal;">(2011-03-30)</span></td></tr>
+    <tr><td class="panelbody">
+      <p><b>Added/Improved:</b></p>
+      <ul>
+        <li>Fixed value search speed is almost twice as fast.</li>
+        <li>Added tempar_autooff.prx, which reverts constant write codes to their original values when deactivated.</li>
+      </ul>
+      <p><b>Fixed:</b></p>
+      <ul>
+        <li>Fixed various random bugs.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">1.6 <span style="font-weight:normal;">(2011-03-21)</span></td></tr>
+    <tr><td class="panelbody">
+      <p><b>Added/Improved:</b></p>
+      <ul>
+        <li>Better homebrew support with unique Game IDs matching CWCheat.</li>
+        <li>Single-select folders are now supported.</li>
+        <li>Rewrote search function (~100x faster average), with less memory stick wear.</li>
+        <li>Option to change how many search results are found before terminating.</li>
+        <li>Cheats can now be saved to <tt>ms0:/seplugins/TempAR/cheats/{game-id}.db</tt>.</li>
+        <li>Added cheat delete function; TRIANGLE menu for edit/rename/delete/copy.</li>
+        <li>All loaded search results can be added with a single click.</li>
+        <li>Support for custom 8x8 fonts via <tt>ms0:/seplugins/TempAR/font.bin</tt>.</li>
+        <li>Added a text/guide viewer, loading from <tt>ms0:/seplugins/TempAR/text/{game-id}.txt</tt>.</li>
+        <li>Support for FreeCheat patch files via <tt>ms0:/seplugins/TempAR/patch/{game-id}.pat</tt>.</li>
+      </ul>
+      <p><b>Fixed:</b></p>
+      <ul>
+        <li>Menu display key no longer interferes with menu options.</li>
+        <li>Copy cheat now actually copies the code lines instead of just the code name.</li>
+      </ul>
+      <p><b>Changed:</b></p>
+      <ul>
+        <li>config.bin files must be deleted after this update or the disassembler/browser may misbehave.</li>
+        <li>Renamed the POPS version to "lite" &mdash; it now works in game mode too, not just POPS.</li>
+        <li>Optimized source, reduced uncompressed PRX size by ~25KB.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">1.5 <span style="font-weight:normal;">(2010-09-25)</span></td></tr>
+    <tr><td class="panelbody">
+      <p><b>Added/Improved:</b></p>
+      <ul>
+        <li>PSPAR folders can now be collapsed/expanded via the 0xCF code type.</li>
+        <li>Folder and comment colors are now customizable in the color files.</li>
+      </ul>
+      <p><b>Fixed:</b></p>
+      <ul>
+        <li>Falls back to reading the Game ID from disc0:/UMD_DATA.BIN or memory if it can't be retrieved normally.</li>
+        <li>Minor bug fixes and changes.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">1.4 <span style="font-weight:normal;">(2010-08-27)</span></td></tr>
+    <tr><td class="panelbody">
+      <p><b>Added/Improved:</b></p>
+      <ul>
+        <li>Support for the qqq part of CWCheat pointer codes (multi-write and copy byte pointer codes).</li>
+        <li>Game name can be shown by pressing VOLDOWN at the cheat selection screen.</li>
+      </ul>
+      <p><b>Fixed:</b></p>
+      <ul>
+        <li>PSPAR loop codes without a terminator line now work correctly.</li>
+      </ul>
+      <p><b>Other:</b></p>
+      <ul>
+        <li>Rewrote cheat database loading &mdash; 2-3x faster.</li>
+        <li>Rewrote the PC converter tool.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">1.3 <span style="font-weight:normal;">(2010-08-08)</span></td></tr>
+    <tr><td class="panelbody">
+      <p><b>Added/Improved:</b></p>
+      <ul>
+        <li>Support for the 0xC6 PSPAR code type, fixing "generic" codes in the official PSPAR database.</li>
+        <li>Support for the 0x0C CWCheat code type (Yu-Gi-Oh codes).</li>
+        <li>Support for loading identical codes across multiple Game IDs (region sharing via consecutive <tt>_S</tt> lines).</li>
+        <li>Japanese font support for the official PSPAR cheat DB.</li>
+        <li>New <tt>_N</tt> line type for an enhanced PSPAR cheat engine, kept separate from the main engine for compatibility testing.</li>
+        <li>Support for extra data register operations (0xD4) and address+offset conditionals in the enhanced engine.</li>
+      </ul>
+      <p><b>Fixed:</b></p>
+      <ul>
+        <li>PSPAR cheat engine execution status now clears at the end of each loop.</li>
+        <li>Fixed a CWCheat bug where the second address character was accidentally removed on apply.</li>
+        <li>Fixed bugs with the 0x06 multi-write code type.</li>
+        <li>Hopefully fixed the long-standing unknown search bug from the original source.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Earlier Versions</td></tr>
+    <tr><td class="panelbody">
+      <p>1.2, 1.1, 1.0, Beta 2.1, Beta 2, and Beta 1 cover the initial PSPAR/CWCheat code type support, POPS/homebrew support, and early search/menu fixes going back to July 2010. Full historical detail is in the <a href="https://github.com/abduznik/tempar/blob/master/docs/CHANGELOG.md">raw changelog on GitHub</a>.</p>
+    </td></tr>
+  </table>
+
+</td>
+</tr>
+</table>
+</td></tr>
+
+<tr><td class="footer">
+  TempAR &copy; abduznik &middot; <a href="https://github.com/abduznik/tempar/blob/master/docs/LICENSE">license</a> &middot; not affiliated with Sony Interactive Entertainment &middot; <a href="https://github.com/abduznik/tempar">source on GitHub</a>
+</td></tr>
+
+</table>
+
+</body>
+</html>

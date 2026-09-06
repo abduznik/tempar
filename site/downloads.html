@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Downloads - TempAR</title>
+<meta name="description" content="Download the latest TempAR release for PSP: full and lite PRX builds, CWCheat and PSP Action Replay cheat engine plugin.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext x='1' y='13' font-size='13' fill='%230f2148'%3E%E2%96%B3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<table class="layout" cellpadding="0" cellspacing="0">
+<tr><td class="banner">
+  <table cellpadding="0" cellspacing="0"><tr>
+    <td class="sitename">TempAR</td>
+    <td class="navlinks">
+      <a href="https://github.com/abduznik/tempar">GitHub</a> |
+      <a href="downloads.html">Downloads</a> |
+      <a href="https://github.com/abduznik/tempar/issues">Forums/Bugs</a>
+    </td>
+  </tr></table>
+  <span class="tagline">a CWCheat &amp; PSP Action Replay engine for the PSP</span>
+</td></tr>
+
+<tr><td class="ticker">
+  <marquee behavior="scroll" scrollamount="3">v1.70 is out now - CWCheat + PSPAR in one plugin - favorites &amp; persistence added - works on CFW only, not OFW - searcher up to 253x faster than the old MKUltra code - full changelog inside</marquee>
+</td></tr>
+
+<tr><td>
+<table cellpadding="0" cellspacing="0" style="width:100%;">
+<tr>
+
+<td class="navcol">
+  <div class="navhead">MAIN MENU</div>
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="install.html">Install &amp; Hotkeys</a></li>
+    <li><a href="docs.html">Documentation</a></li>
+    <li><a href="downloads.html" class="current">Downloads</a></li>
+    <li><a href="changelog.html">Changelog</a></li>
+    <li><a href="develop.html">Developers</a></li>
+    <li><a href="credits.html">Credits</a></li>
+  </ul>
+  <div class="navhead">EXTERNAL</div>
+  <ul>
+    <li><a href="https://github.com/abduznik/tempar">GitHub Repo</a></li>
+    <li><a href="https://github.com/abduznik/tempar/releases">All Releases</a></li>
+    <li><a href="https://github.com/abduznik/tempar/issues">Report a Bug</a></li>
+  </ul>
+</td>
+
+<td class="maincol">
+
+  <table class="panel">
+    <tr><td class="panelhead">Latest Release <span class="newflag">[v1.70]</span></td></tr>
+    <tr><td class="panelbody">
+      <p>
+        All releases are built and published automatically from source via GitHub Actions,
+        so what you download matches what's in the repository &mdash; no third-party mirrors,
+        no bundled installers.
+      </p>
+      <p>
+        <a href="https://github.com/abduznik/tempar/releases/latest"><b>&raquo; Download the latest release from GitHub</b></a>
+      </p>
+      <p>Each release <tt>.zip</tt> contains the <tt>seplugins</tt> folder structure ready to copy to your Memory Stick, plus the end-user documentation.</p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Full vs. Lite &mdash; Which Do I Want?</td></tr>
+    <tr><td class="panelbody">
+      <table class="data">
+        <tr><th>Build</th><th>File</th><th>Use case</th></tr>
+        <tr><td><b>Full</b></td><td><tt>tempar.prx</tt></td><td>Standard PSP games/homebrew. Includes USB, PSID, screenshots, guide viewer, UMD dump, module/thread list.</td></tr>
+        <tr class="alt"><td><b>Lite</b></td><td><tt>tempar_lite.prx</tt></td><td>POPS (PS1-on-PSP) and other memory-constrained modes. Smaller footprint, fewer extras.</td></tr>
+      </table>
+      <p>See the FAQ on the <a href="docs.html">Documentation</a> page for POPS-specific setup notes.</p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">All Versions</td></tr>
+    <tr><td class="panelbody">
+      <p>Every tagged release, including older versions, is available on the GitHub releases page:</p>
+      <p><a href="https://github.com/abduznik/tempar/releases">&raquo; github.com/abduznik/tempar/releases</a></p>
+      <p>For what changed between versions, see the <a href="changelog.html">Changelog</a>.</p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">Building From Source</td></tr>
+    <tr><td class="panelbody">
+      <p>Prefer to build it yourself? TempAR builds against the PSPSDK toolchain via Docker, no local PSP toolchain install required:</p>
+      <p><tt>docker run -it -v "${PWD}:/src" -w "/src" pspdev/pspsdk make release</tt></p>
+      <p>Full build documentation is on the <a href="develop.html">Developers</a> page.</p>
+    </td></tr>
+  </table>
+
+</td>
+</tr>
+</table>
+</td></tr>
+
+<tr><td class="footer">
+  TempAR &copy; abduznik &middot; <a href="https://github.com/abduznik/tempar/blob/master/docs/LICENSE">license</a> &middot; not affiliated with Sony Interactive Entertainment &middot; <a href="https://github.com/abduznik/tempar">source on GitHub</a>
+</td></tr>
+
+</table>
+
+</body>
+</html>
