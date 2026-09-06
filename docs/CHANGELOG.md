@@ -1,3 +1,63 @@
+## 1.70.4
+
+### Fixed
+
+ * Audit pass covering ten numbered issues (#29-#38):
+   * Rewrote `real_address` so the result is always within VRAM (0x04000000-0x041FFFFF) or the
+     configured `[address_start, address_end]` window; moved to a shared `addr.h` header.
+   * Fixed a scroll-window pointer bug in `get_print_start_end`.
+   * `language_load` now clamps the firmware language id before indexing.
+   * `language_process_buffer` is now bounds-checked and falls back to built-in English on a
+     truncated/malformed language file.
+   * Fixed an undefined-behavior overlapping `snprintf` src/dst in the on-screen keyboard.
+   * `fileIoWrite` now flushes before the buffered write can overflow its heap buffer (previously
+     only flushed past 8128 bytes, allowing writes up to ~16319 bytes into an 8192-byte buffer).
+   * Cheat file loading now caps `.db`/`.txt` files at 32MB and validates PSPAR game/item headers
+     before trusting their counts.
+
+### Changed
+
+ * Config validation/recovery (checksum + field clamping) is now shared between the plugin and a
+   new host-side test suite via `config_core.h`.
+ * Consolidated `makefile_psp`/`makefile_lite` into one parameterized `src/makefile`
+   (`VARIANT=psp|lite`); the old makefile names remain as thin shims.
+ * Added host-side unit tests (`tests/`) that compile and exercise the real shared address/config
+   logic without needing the PSP SDK, wired into CI.
+
+## 1.70.3
+
+### Added
+
+ * Crash recovery: a kernel plugin can't know a game crashed in the moment, but it can tell the
+   previous session didn't exit cleanly (a clean exit unloads the plugin via `module_stop`; a
+   crash doesn't). A lifecycle marker file is now set when a game session starts and cleared on
+   clean exit. If the marker is still set at boot, all always-on and selected cheats are
+   automatically disabled and saved, and a crash-safe notice is shown briefly on the cheat list.
+
+## 1.70.2
+
+### Fixed
+
+ * Fixed a crash in GTA: Liberty City Stories at asset load, caused by a memory allocator bug
+   introduced in 1.65: the partition-selection loop iterated one past the end of a 2-element
+   array, occasionally reading a garbage stack value that resolved to the wrong system memory
+   partition. Under memory pressure this could allocate from the game's own partitions instead of
+   the plugin's, stealing RAM the game needed at its asset-load peak. Restored the original
+   3-partition allocation list and made the allocator fail closed (return NULL) instead of falling
+   back to an unrestricted allocation when its preferred partitions are exhausted.
+
+## 1.70.1
+
+### Fixed
+
+ * `config_load` no longer wipes user settings back to defaults on a checksum mismatch against a
+   pre-v1.70 config file (which has no checksum field) — it now heals the checksum and memory
+   range in place instead, preventing an unconditional settings reset and cheat database
+   truncation.
+ * Widened the valid memory range for `memory_copy`, the PSPAR 0x0E patch code type, and
+   `patch_apply` to the PSP's actual writable footprint (VRAM through main RAM), which had
+   previously silently rejected legitimate VRAM cheat targets.
+
 ## 1.6.4 (2022-10-03)
 
 ### Fixed

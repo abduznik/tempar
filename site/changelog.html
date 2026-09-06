@@ -24,7 +24,7 @@
 </td></tr>
 
 <tr><td class="ticker">
-  <marquee behavior="scroll" scrollamount="3">v1.70 is out now - CWCheat + PSPAR in one plugin - favorites &amp; persistence added - works on CFW only, not OFW - searcher up to 253x faster than the old MKUltra code - full changelog inside</marquee>
+  <marquee behavior="scroll" scrollamount="3">v1.70.4 is out now - crash recovery added - fixed a memory allocator bug that crashed GTA: Liberty City Stories - config self-heal - CWCheat + PSPAR in one plugin - works on CFW only, not OFW - full changelog inside</marquee>
 </td></tr>
 
 <tr><td>
@@ -51,6 +51,59 @@
 </td>
 
 <td class="maincol">
+
+  <table class="panel">
+    <tr><td class="panelhead">1.70.4 <span class="newflag">[current]</span></td></tr>
+    <tr><td class="panelbody">
+      <p><b>Fixed</b> &mdash; audit pass covering ten numbered issues (#29-#38):</p>
+      <ul>
+        <li>Rewrote <tt>real_address</tt> so the result is always within VRAM (0x04000000-0x041FFFFF) or the configured address window; moved to a shared <tt>addr.h</tt> header.</li>
+        <li>Fixed a scroll-window pointer bug in <tt>get_print_start_end</tt>.</li>
+        <li><tt>language_load</tt> now clamps the firmware language id before indexing.</li>
+        <li><tt>language_process_buffer</tt> is now bounds-checked and falls back to built-in English on a truncated/malformed language file.</li>
+        <li>Fixed an undefined-behavior overlapping <tt>snprintf</tt> src/dst in the on-screen keyboard.</li>
+        <li><tt>fileIoWrite</tt> now flushes before the buffered write can overflow its heap buffer (previously only flushed past 8128 bytes, allowing writes up to ~16319 bytes into an 8192-byte buffer).</li>
+        <li>Cheat file loading now caps .db/.txt files at 32MB and validates PSPAR game/item headers before trusting their counts.</li>
+      </ul>
+      <p><b>Changed:</b></p>
+      <ul>
+        <li>Config validation/recovery (checksum + field clamping) is now shared between the plugin and a new host-side test suite.</li>
+        <li>Consolidated makefile_psp/makefile_lite into one parameterized src/makefile (VARIANT=psp|lite); old names remain as shims.</li>
+        <li>Added host-side unit tests that compile and exercise the real shared address/config logic without needing the PSP SDK, wired into CI.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">1.70.3</td></tr>
+    <tr><td class="panelbody">
+      <p><b>Added:</b></p>
+      <ul>
+        <li>Crash recovery &mdash; a kernel plugin can't know a game crashed in the moment, but it can tell the previous session didn't exit cleanly (a clean exit unloads the plugin via module_stop; a crash doesn't). A lifecycle marker is now set when a game session starts and cleared on clean exit. If the marker is still set at boot, all always-on and selected cheats are automatically disabled and saved, with a crash-safe notice shown briefly on the cheat list.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">1.70.2</td></tr>
+    <tr><td class="panelbody">
+      <p><b>Fixed:</b></p>
+      <ul>
+        <li>Fixed a crash in GTA: Liberty City Stories at asset load, caused by a memory allocator bug introduced in 1.65: the partition-selection loop iterated one past the end of a 2-element array, occasionally reading a garbage value that resolved to the wrong system memory partition. Under memory pressure this could allocate from the game's own partitions instead of the plugin's, stealing RAM the game needed at its asset-load peak. Restored the original 3-partition allocation list and made the allocator fail closed instead of falling back to an unrestricted allocation.</li>
+      </ul>
+    </td></tr>
+  </table>
+
+  <table class="panel">
+    <tr><td class="panelhead">1.70.1</td></tr>
+    <tr><td class="panelbody">
+      <p><b>Fixed:</b></p>
+      <ul>
+        <li><tt>config_load</tt> no longer wipes user settings back to defaults on a checksum mismatch against a pre-v1.70 config file (which has no checksum field) &mdash; it now heals the checksum and memory range in place instead.</li>
+        <li>Widened the valid memory range for memory_copy, the PSPAR 0x0E patch code type, and patch_apply to the PSP's actual writable footprint (VRAM through main RAM), which had previously silently rejected legitimate VRAM cheat targets.</li>
+      </ul>
+    </td></tr>
+  </table>
 
   <table class="panel">
     <tr><td class="panelhead">1.6.4 <span style="font-weight:normal;">(2022-10-03)</span></td></tr>

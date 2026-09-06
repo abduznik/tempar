@@ -24,7 +24,7 @@
 </td></tr>
 
 <tr><td class="ticker">
-  <marquee behavior="scroll" scrollamount="3">v1.70 is out now - CWCheat + PSPAR in one plugin - favorites &amp; persistence added - works on CFW only, not OFW - searcher up to 253x faster than the old MKUltra code - full changelog inside</marquee>
+  <marquee behavior="scroll" scrollamount="3">v1.70.4 is out now - crash recovery added - fixed a memory allocator bug that crashed GTA: Liberty City Stories - config self-heal - CWCheat + PSPAR in one plugin - works on CFW only, not OFW - full changelog inside</marquee>
 </td></tr>
 
 <tr><td>
@@ -87,7 +87,7 @@
     <tr><td class="panelbody">
       <p>There's a top-level <tt>makefile</tt> that orchestrates everything, plus per-binary makefiles in <tt>src/</tt> that PSPSDK's own build system (<tt>build.mak</tt>) consumes.</p>
       <p><b>makefile (repo root):</b></p>
-<pre class="code">export RELVER := 1.70
+<pre class="code">export RELVER := 1.70.4
 
 release:    prep psp lite pack clean
 release_pr: prep psppr litepr pack clean</pre>
@@ -100,14 +100,30 @@ release_pr: prep psppr litepr pack clean</pre>
         <tr><td><tt>pack</tt></td><td>Creates <tt>build/temp</tt>, copies <tt>src/resources/*</tt> (the seplugins folder structure users install) and <tt>docs/</tt> (end-user docs) into it, moves the built .prx files into <tt>build/temp/seplugins/TempAR</tt>, then zips the whole thing to <tt>build/tempar-$(RELVER).zip</tt>.</td></tr>
         <tr class="alt"><td><tt>clean</tt></td><td>Removes build artifacts: .elf/.prx outputs, objects/*.o, generated language headers, build/temp.</td></tr>
       </table>
-      <p><tt>release</tt> runs <tt>prep</tt>, builds both <tt>psp</tt> and <tt>lite</tt>, packs, then cleans. <b>RELVER must be bumped by hand</b> in this file for every release &mdash; it's also duplicated in <tt>src/include/version.h</tt> (<tt>VER_MAIN</tt>/<tt>VER_SUB</tt>) and must be kept in sync manually.</p>
+      <p><tt>release</tt> runs <tt>prep</tt>, builds both <tt>psp</tt> and <tt>lite</tt>, packs, then cleans. <b>RELVER must be bumped by hand</b> in this file for every release &mdash; it's also duplicated in <tt>src/include/version.h</tt> (<tt>VER_MAIN</tt>/<tt>VER_SUB</tt>/<tt>VER_PATCH</tt>) and must be kept in sync manually.</p>
+    </td></tr>
+  </table>
+
+  <table class="callout">
+    <tr><td class="callouthead">Makefile consolidation (v1.70.4)</td></tr>
+    <tr><td class="calloutbody">
+      <tt>src/makefile_psp</tt> and <tt>src/makefile_lite</tt> are no longer the real build logic
+      &mdash; both are now thin wrappers around one parameterized <tt>src/makefile</tt>:
+<pre class="code"># src/makefile_psp:
+VARIANT = psp
+include makefile</pre>
+      The real makefile is invoked as <tt>make -C src -f makefile VARIANT=psp|lite</tt> (default
+      <tt>psp</tt>). The old per-variant names still work unchanged from the top-level makefile's
+      perspective &mdash; nothing above this layer needed to change. If you're adding a new build
+      variant, add it to <tt>src/makefile</tt>'s <tt>VARIANT</tt> branching, not as a fourth
+      copy-pasted file.
     </td></tr>
   </table>
 
   <table class="panel">
     <tr><td class="panelhead">src/makefile_psp and src/makefile_lite</td></tr>
     <tr><td class="panelbody">
-      <p>These are real PSPSDK makefiles (they <tt>include $(PSPSDK)/lib/build.mak</tt> at the bottom, where all the actual compile/link rules live &mdash; these files only set variables).</p>
+      <p>These are now thin wrappers (see above) around <tt>src/makefile</tt>, which <tt>include $(PSPSDK)/lib/build.mak</tt> at the bottom, where all the actual compile/link rules live.</p>
       <p>Key variables and what changing them means:</p>
       <ul>
         <li><b>TARGET</b> &mdash; output PRX name (<tt>tempar</tt> / <tt>tempar_lite</tt>).</li>
@@ -150,9 +166,30 @@ _MIPS_ _AUTOOFF_ _MULTILANGUAGE_</pre>
   </table>
 
   <table class="panel">
+    <tr><td class="panelhead">Host-Side Test Suite (tests/)</td></tr>
+    <tr><td class="panelbody">
+      <p>
+        As of v1.70.4, address-mapping and config-validation logic lives in shared headers
+        (<tt>addr.h</tt>, <tt>config_core.h</tt>) that compile both into the PRX and into standalone
+        host binaries &mdash; so the real logic can be unit-tested on any machine with a C compiler,
+        no PSP SDK or Docker required:
+      </p>
+<pre class="code">cd tests
+make run
+# == test_address ==
+# == test_config_core ==</pre>
+      <p>
+        This runs as its own <tt>host-tests</tt> CI job, separate from and before the Docker-based
+        PRX build. If you're touching address clamping or config validation, run this locally first
+        &mdash; it's much faster than a full Docker build cycle.
+      </p>
+    </td></tr>
+  </table>
+
+  <table class="panel">
     <tr><td class="panelhead">CI (.github/workflows/build.yml)</td></tr>
     <tr><td class="panelbody">
-      <p>Triggers: push to main/master/feat/*, PRs into main/master, tag pushes (v*), and manual workflow_dispatch.</p>
+      <p>Triggers: push to main/master/feat/*, PRs into main/master, tag pushes (v*), and manual workflow_dispatch. Two jobs run: <tt>host-tests</tt> (the suite above) and <tt>build</tt> (the actual PRX build), independently.</p>
       <ol>
         <li><tt>docker run ... pspdev/pspdev make prep psp lite</tt> &mdash; builds both PRXs (does not run pack here, that's separate).</li>
         <li><tt>make pack</tt> on the runner directly (installs zip via apt first if missing).</li>
