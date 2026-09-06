@@ -6,8 +6,7 @@
 #include "common.h"
 
 int choose_alloc(SceSize size) {
-	//SceUID partitionids[] = {9, 1, 6};
-	SceUID partitionids[] = {1, 6};
+	SceUID partitionids[] = {9, 1, 6};
 
 	int i;
 	for(i = 0; i < (int)(sizeof(partitionids) / sizeof(partitionids[0])); i++) {
@@ -28,7 +27,16 @@ int choose_alloc(SceSize size) {
 void *kmalloc_align(SceUID partitionid, int type, SceSize size, int align) {
 	size = size + align + sizeof(SceUID);
 
-    SceUID mem_id = sceKernelAllocPartitionMemory((partitionid == 0 ? choose_alloc(size) : partitionid), "", type, size, NULL);
+    if(partitionid == 0) {
+        partitionid = choose_alloc(size);
+        // all named partitions exhausted — fail closed rather than
+        // falling through to partition 0 (would steal game memory).
+        if(partitionid == 0) {
+            return NULL;
+        }
+    }
+
+    SceUID mem_id = sceKernelAllocPartitionMemory(partitionid, "", type, size, NULL);
 
 	if(mem_id >= 0) {    
 		void *mem_addr = sceKernelGetBlockHeadAddr(mem_id);

@@ -5,8 +5,11 @@
 #include <psputils.h>
 #include <pspthreadman.h>
 #include "common.h"
+#include "addr.h"
 
 extern Config cfg;
+extern char crash_notice[96];
+extern int crash_notice_frames;
 extern MenuState menu;
 extern char boot_path[];
 
@@ -28,22 +31,6 @@ u16 psx_pad;
 u32 dx_run_counter;
 
 /* Cheat apply functions */
-
-u32 real_address(u32 address) {
-	address &= 0x0FFFFFFF;
-
-	if(address >= 0 && address <= cfg.address_end - cfg.address_start) {
-		address += cfg.address_start;
-	} else if(address > cfg.address_end) {
-		address = cfg.address_end;
-	}
-
-	return address;
-}
-
-u32 address(u32 address) {
-	return real_address(address) - cfg.address_format;
-}
 
 u32 address_load(u32 address, u8 type) {
 	if((address & 0xFF000000) == 0x0A000000) {
@@ -127,18 +114,20 @@ void memory_copy(u32 to, u32 from, u32 bytes) {
 	to = real_address(to);
 	from = real_address(from);
 
-	// validate both addresses fall within game memory before copying
-	if(to < cfg.address_start || to > cfg.address_end ||
-	   from < cfg.address_start || from > cfg.address_end) {
+	// validate both addresses fall within writable PSP memory
+	// (VRAM 0x04000000 .. main RAM top 0x09FFFFFF) before copying;
+	// kernel-scratch and unmapped regions stay rejected.
+	if(to < 0x04000000 || to > 0x09FFFFFF ||
+	   from < 0x04000000 || from > 0x09FFFFFF) {
 		return;
 	}
 
-	// clamp the copy length so reads and writes stay within game memory
-	if(bytes > cfg.address_end - to) {
-		bytes = cfg.address_end - to;
+	// clamp the copy length so reads and writes stay within memory
+	if(bytes > 0x09FFFFFF - to) {
+		bytes = 0x09FFFFFF - to;
 	}
-	if(bytes > cfg.address_end - from) {
-		bytes = cfg.address_end - from;
+	if(bytes > 0x09FFFFFF - from) {
+		bytes = 0x09FFFFFF - from;
 	}
 
 	if(bytes == 0) {
@@ -408,11 +397,11 @@ void cheat_apply_pspar(Cheat *cheat) {
 				u32 patch_dst = real_address(address);
 				u32 patch_len = value;
 
-				// validate the destination falls within game memory
-				if(patch_dst >= cfg.address_start && patch_dst <= cfg.address_end) {
-					// clamp the patch length so the write stays within game memory
-					if(patch_len > cfg.address_end - patch_dst) {
-						patch_len = cfg.address_end - patch_dst;
+				// validate the destination falls within writable PSP memory (VRAM .. main RAM)
+				if(patch_dst >= 0x04000000 && patch_dst <= 0x09FFFFFF) {
+					// clamp the patch length so the write stays within memory
+					if(patch_len > 0x09FFFFFF - patch_dst) {
+						patch_len = 0x09FFFFFF - patch_dst;
 					}
 
 					memcpy((void*)patch_dst, (void*)block + 8, patch_len);
@@ -1116,6 +1105,13 @@ void cheat_load_db(const char *file, const char *game_id, char index) {
 	SceUID fd = fileIoOpen(file, PSP_O_RDONLY, 0777);
 
 	if(fd > -1) {
+		// sanity: refuse oversized cheat files before parsing
+		if(sceIoLseek(fd, 0, SEEK_END) > (32 * 1024 * 1024)) {
+			sceIoClose(fd);
+			return;
+		}
+		sceIoLseek(fd, 0, SEEK_SET);
+
 		Cheat *cheat = NULL;
 		Block *block = NULL;
 
@@ -1255,6 +1251,11 @@ void cheat_load_bin(const char *file, const char *game_id, char index) {
 		fileIoLseek(fd, 28, SEEK_CUR);
 
 		while(fileIoRead(fd, &game_header, sizeof(ARGameHeader)) == sizeof(ARGameHeader)) {
+			// validate the binary header before trusting its sizes
+			if(game_header.header_size < sizeof(ARGameHeader) || game_header.item_count > 4096) {
+				break;
+			}
+
 			// skip game and continue loop if game id doesn't match
 			if(!gameid_matches(game_id, game_header.game_id) || current_cheat_index++ < index) {
 				if(game_header.game_size == 0) {
@@ -1282,6 +1283,10 @@ void cheat_load_bin(const char *file, const char *game_id, char index) {
 
 				if(cheat) {
 					fileIoRead(fd, &item_header, sizeof(item_header));
+					if(item_header.code_count > 4096) {
+						game_header.item_count = 0;
+						break;
+					}
 
 					// read/skip the cheat name
 					cheat_set_name(cheat, fileIoGet(), 0);
@@ -1520,6 +1525,35 @@ int gameid_matches(const char *id1, const char *id2) {
 	}
 
 	return (_strnicmp(id1, id2, GAME_ID_LENGTH) == 0);
+}
+
+/* Crash recovery: called at boot when the previous game session exited
+ * uncleanly (crashed). Disables every enabled cheat (always-on + selected)
+ * and persists the new state so the next boot applies nothing. */
+void cheat_disable_all_enabled(void) {
+	int i;
+	int disabled = 0;
+
+	for(i = 0; i < cheat_total; i++) {
+		Cheat *cheat = cheat_get(i);
+		if(cheat != NULL && (cheat->flags & (CHEAT_CONSTANT | CHEAT_SELECTED))) {
+			cheat->flags &= ~(CHEAT_CONSTANT | CHEAT_SELECTED);
+			disabled++;
+		}
+	}
+
+	// keep the apply loop idle this session as well
+	cfg.cheat_status = 0;
+
+	if(disabled > 0) {
+		if(game_id[0] != 0) {
+			cheat_save(game_id);
+		}
+		snprintf(crash_notice, sizeof(crash_notice), "crash-safe: disabled %d enabled cheat(s)", disabled);
+	} else {
+		snprintf(crash_notice, sizeof(crash_notice), "crash-safe: no auto cheats were active");
+	}
+	crash_notice_frames = 180;
 }
 
 char *gameid_get(char force_refresh) {
@@ -2383,17 +2417,17 @@ void patch_apply(const char *path) {
 
 		// read the address to start the patch
 		if(sceIoRead(fd, &patch_address, 4) == 4) {
-			// validate the patch address falls within game memory
-			if(patch_address >= cfg.address_start && patch_address < cfg.address_end) {
+			// validate the patch address falls within writable PSP memory (VRAM .. main RAM)
+			if(patch_address >= 0x04000000 && patch_address < 0x09FFFFFF) {
 				// get the patch size (excluding the 4-byte address header)
 				length = sceIoLseek(fd, 0, SEEK_END) - 4;
 				if(length < 0) {
 					length = 0;
 				}
 
-				// clamp the patch length so the write stays within game memory
-				if((u32)length > cfg.address_end - patch_address) {
-					length = cfg.address_end - patch_address;
+				// clamp the patch length so the write stays within memory
+				if((u32)length > 0x09FFFFFF - patch_address) {
+					length = 0x09FFFFFF - patch_address;
 				}
 
 				// seek back to the start of the patch data and apply it

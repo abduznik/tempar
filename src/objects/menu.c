@@ -19,8 +19,11 @@
 #include <pspkerneltypes.h>
 #include <pspthreadman.h>
 #include "common.h"
+#include "addr.h"
 
 extern SceUID thid;
+extern char crash_notice[96];
+extern int crash_notice_frames;
 extern Cheat *cheats;
 extern Block *blocks;
 extern int cheat_total;
@@ -177,7 +180,7 @@ void get_print_start_end(int *start, int *end, int num_items, int display_items,
 		*end = (display_items > num_items ? num_items : display_items);
 	}
 
-	*end--;
+	(*end)--;
 }
 
 u32 percentage_to_color(int percent) {
@@ -2185,6 +2188,15 @@ u32 layout_cheats()  {
 
 	while(ret == 0) {
 		total_visible = cheat_visible_count();
+
+		// crash-recovery notice (fades after a few seconds)
+		if(crash_notice_frames > 0) {
+			pspDebugScreenSetXY(0, 2);
+			pspDebugScreenSetTextColor(colors.color01);
+			puts(crash_notice);
+			crash_notice_frames--;
+		}
+
 
 		// find display index of selected cheat
 		sel_display = 0;

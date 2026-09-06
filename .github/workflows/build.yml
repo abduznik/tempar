@@ -17,6 +17,14 @@ permissions:
   contents: write
 
 jobs:
+  host-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run host unit tests (no PSP SDK)
+        run: |
+          make -C tests run
+
   build:
     runs-on: ubuntu-latest
     steps:
